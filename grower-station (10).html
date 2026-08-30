@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>עמדת מגדל - מחולל מדבקות</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/4.1.1/bwip-js-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; background: #eef2f7; color: #1a2533; padding: 14px; line-height: 1.5; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  header { background: linear-gradient(135deg, #1565c0, #0d47a1); color: #fff; padding: 16px 20px; border-radius: 14px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(13,71,161,.25); }
+  header h1 { font-size: 1.25rem; }
+  header p { font-size: .85rem; opacity: .9; margin-top: 3px; }
+  .card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 14px; }
+  .card h2 { font-size: 1rem; margin-bottom: 12px; padding-bottom: 7px; border-bottom: 2px solid #eef2f7; color: #0d47a1; }
+  label { display:block; font-size: .8rem; font-weight: 600; margin-bottom: 4px; color:#46586e; }
+  .field { margin-bottom: 11px; }
+  select, input { width: 100%; padding: 10px 11px; border: 1.5px solid #d4dde8; border-radius: 8px; font-size: .98rem; font-family: inherit; background: #fff; }
+  select:focus, input:focus { outline: none; border-color: #1565c0; }
+  .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+  .row2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  @media (max-width:680px){ .row3,.row2{ grid-template-columns:1fr; } }
+  .grower-info { background:#f1f8e9; border:1.5px dashed #aed581; border-radius:8px; padding:8px 12px; font-size:.85rem; color:#33691e; margin-top:8px; display:none; }
+  .grower-info b{ color:#1b5e20; }
+  .btn { padding: 12px 18px; background: linear-gradient(135deg, #2e7d32, #1b5e20); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 3px 10px rgba(27,94,32,.3); }
+  .btn:active { transform: translateY(1px); }
+  .btn-add { background: linear-gradient(135deg, #1565c0, #0d47a1); width:100%; margin-top:4px; }
+  .btn-print { background: linear-gradient(135deg, #6a1b9a, #4a148c); }
+  .btn-sm { padding:6px 10px; font-size:.85rem; border-radius:7px; }
+  .btn-del { background:#e53935; box-shadow:none; }
+  .mix-toggle { display:flex; align-items:center; gap:8px; background:#fff3e0; border:1.5px solid #ffb74d; border-radius:8px; padding:8px 12px; margin-bottom:11px; cursor:pointer; font-size:.9rem; font-weight:600; color:#e65100; }
+  .mix-toggle input { width:auto; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; font-size:.85rem; }
+  th { background:#f5f8fc; padding:7px 5px; text-align:right; font-size:.75rem; color:#46586e; border-bottom:2px solid #e0e8f0; }
+  td { padding:6px 5px; border-bottom:1px solid #eef2f7; }
+  .empty-row td { text-align:center; color:#9bb; padding:16px; }
+  .totals-bar { display:flex; gap:18px; flex-wrap:wrap; background:#e3f2fd; border-radius:9px; padding:10px 16px; margin-top:10px; font-size:.9rem; }
+  .totals-bar b { color:#0d47a1; font-size:1.05rem; }
+  .hint { font-size:.78rem; color:#7a8aa0; margin-top:8px; }
+  .seg { display:inline-block; padding:4px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+  .qty-field { background:#e3f2fd; border-radius:8px; padding:8px; }
+  .labels-scroll { max-height: 680px; overflow-y:auto; padding:8px; background:#cfd8e0; border-radius:10px; }
+  .label-pair { display:flex; gap:3mm; justify-content:center; margin:0 auto 14px; width:fit-content; }
+  .picker-label { background:#fff; border:1px solid #ccc; border-radius:3px; padding:4mm; width:38mm; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; font-weight:800; font-size:5mm; }
+  .picker-label .pk-logo { font-size:7mm; margin-bottom:2mm; }
+  .label { width:100mm; background:#fff; border:1px solid #999; border-radius:3px; padding:3mm; display:flex; flex-direction:column; font-family:Arial,sans-serif; color:#000; }
+  .lbl-head { display:flex; justify-content:space-between; align-items:flex-start; }
+  .lbl-head-left { flex:1; }
+  .lbl-transport { display:inline-block; border:1.5px solid #000; border-radius:4px; padding:0.5mm 2mm; font-weight:800; font-size:4mm; }
+  .lbl-delivery { font-size:3mm; margin-right:2mm; display:inline; }
+  .lbl-dest { font-size:5mm; font-weight:800; margin-top:1mm; line-height:1.1; }
+  .lbl-gr { font-size:2.8mm; margin-top:0.5mm; }
+  .lbl-dm { text-align:center; width:24mm; }
+  .lbl-dm canvas { width:20mm; height:20mm; }
+  .lbl-dm .dmnum { font-size:2.6mm; font-weight:700; letter-spacing:.5px; }
+  .lbl-table { width:100%; border-collapse:collapse; margin-top:1.5mm; font-size:2.8mm; }
+  .lbl-table th, .lbl-table td { border:0.4mm solid #000; padding:0.6mm 1mm; text-align:right; }
+  .lbl-table th { font-weight:700; }
+  .lbl-table .c-qty { width:13%; } .lbl-table .c-code { width:13%; } .lbl-table .c-prod { width:38%; } .lbl-table .c-len{width:12%;} .lbl-table .c-wgt{width:12%;} .lbl-table .c-oth{width:12%;}
+  .lbl-foot { display:flex; justify-content:space-between; align-items:center; margin-top:1mm; }
+  .lbl-foot-black { background:#000; color:#fff; font-size:2mm; padding:0.8mm 1.5mm; flex:1; margin-left:2mm; }
+  .lbl-carton { font-size:3.4mm; font-weight:700; white-space:nowrap; text-align:center; }
+  @media print {
+    /* הסתר הכל */
+    body { background:#fff !important; padding:0 !important; margin:0 !important; }
+    body * { visibility:hidden !important; }
+    /* הצג רק את אזור המדבקות */
+    #printZone, #printZone * { visibility:visible !important; }
+    #printZone { position:absolute !important; top:0 !important; right:0 !important; left:0 !important; width:100% !important; }
+    /* הסתר לגמרי כל מה שלא מדבקה */
+    header, .card, .overlay, .no-print { display:none !important; }
+    #printZone .card { display:none !important; }
+    .labels-scroll { max-height:none !important; overflow:visible !important; background:none !important; padding:0 !important; }
+    .label-pair { page-break-inside:avoid !important; margin-bottom:5mm !important; }
+    @page { margin:5mm; }
+  }
+  .overlay { display:none; position:fixed; inset:0; background:rgba(13,17,23,.6); z-index:200; align-items:center; justify-content:center; padding:16px; }
+  .modal { background:#fff; border-radius:16px; max-width:560px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.4); }
+  .modal-head { background:linear-gradient(135deg,#1565c0,#0d47a1); color:#fff; padding:16px 20px; border-radius:16px 16px 0 0; }
+  .modal-head h2 { font-size:1.1rem; margin:0; color:#fff; border:none; padding:0; }
+  .modal-head p { font-size:.82rem; opacity:.9; margin-top:3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div>
+        <h1>🌸 עמדת מגדל — מחולל מדבקות</h1>
+        <p>בית האריזה · מדבקה 100×75 מ"מ (Zebra ZD220)</p>
+      </div>
+      <a href="https://transcendent-dragon-55ce11.netlify.app" class="no-print" id="homeLink" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:700;white-space:nowrap">🏠 דף הבית</a>
+    </div>
+    <div class="no-print" id="loadStatus" style="margin-top:8px;font-size:.82rem;opacity:.9">⏳ טוען נתונים…</div>
+  </header>
+
+  <div class="card no-print">
+    <h2>① פרטי המשלוח</h2>
+    <div class="row2">
+      <div class="field"><label>מגדל <span style="color:#e53935">*</span></label><select id="grower" onchange="onGrower()"></select></div>
+      <div class="field"><label>פורק (Handler)</label><select id="handler"></select></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>יעד / בורסה</label><select id="dest"></select></div>
+      <div class="field"><label>הובלה</label><select id="transport"><option>Air</option><option>Sea</option></select></div>
+      <div class="field"><label>מס׳ תעודה</label><input type="text" id="delivery" readonly style="background:#f5f8fc"></div>
+    </div>
+    <div class="field">
+      <label>מספר ספק פנימי (SUP) <span style="color:#7a8aa0">— לקובץ פריורטי</span></label>
+      <input type="text" id="supNum" placeholder="לדוגמה: SISFL0637" oninput="saveState()">
+    </div>
+    <div class="grower-info" id="growerInfo"></div>
+  </div>
+
+  <div class="card no-print">
+    <h2>② קרטונים</h2>
+    <label class="mix-toggle"><input type="checkbox" id="isMix" onchange="toggleMix()"> קרטון מיקס (כמה זנים בקרטון אחד)</label>
+
+    <div id="singleMode">
+      <div class="row3">
+        <div class="field"><label>סוג (מין ראשי) <span style="color:#e53935">*</span></label><select id="cat" onchange="onCat()"></select></div>
+        <div class="field"><label>זן <span style="color:#e53935">*</span></label><select id="variety"></select></div>
+        <div class="field"><label>אורך (Len)</label><input type="number" id="len" inputmode="numeric" placeholder="לא חובה"></div>
+      </div>
+      <div class="row3">
+        <div class="field qty-field"><label>יח' באגד <span style="color:#1565c0">(לכמות)</span></label><input type="number" id="perBunch" inputmode="numeric" placeholder="לדוגמה 10" oninput="calcPreview()"></div>
+        <div class="field qty-field"><label>מס' אגדים <span style="color:#1565c0">(לכמות)</span></label><input type="number" id="bunches" inputmode="numeric" placeholder="לדוגמה 20" oninput="calcPreview()"></div>
+        <div class="field qty-field"><label>= סה"כ כמות</label><input type="number" id="totalCalc" readonly placeholder="יחושב" style="background:#fff;font-weight:700;color:#0d47a1;"></div>
+      </div>
+      <div class="row3">
+        <div class="field"><label>סוג קרטון</label><select id="cartonType"><option value="">— בחר —</option></select></div>
+        <div class="field"><label>דרגת פתיחה <span style="color:#7a8aa0">(לא חובה)</span></label><select id="stage"></select></div>
+        <div class="field"><label>משקל (Wgt)</label><input type="number" id="wgt" inputmode="decimal" placeholder="לא חובה"></div>
+      </div>
+      <div class="field"><label>חבילות <span style="color:#7a8aa0">(תצוגה בלבד)</span></label><input type="number" id="packs" inputmode="numeric" placeholder="לא חובה"></div>
+      <div class="field"><label>מספר קרטונים זהים</label><input type="number" id="cartonQty" inputmode="numeric" value="1" min="1"></div>
+      <button class="btn btn-add" onclick="addSingle()">➕ הוסף קרטון(ים)</button>
+      <p class="hint">רק סוג וזן חובה. <b>סה"כ כמות = יח' באגד × מס' אגדים</b> (חבילות לתצוגה בלבד). שאר השדות אופציונליים.</p>
+    </div>
+
+    <div id="mixMode" style="display:none">
+      <p class="hint" style="margin-bottom:8px">בקרטון מיקס מוסיפים כמה זנים לאותו קרטון (עד 3). הוסף זן-זן, ובסוף "סגור קרטון מיקס".</p>
+      <div class="row3">
+        <div class="field"><label>סוג (מין ראשי)</label><select id="mCat" onchange="onMCat()"></select></div>
+        <div class="field"><label>זן</label><select id="mVariety"></select></div>
+        <div class="field"><label>אורך</label><input type="number" id="mLen" inputmode="numeric" placeholder="לא חובה"></div>
+      </div>
+      <div class="row3">
+        <div class="field"><label>יח' באגד</label><input type="number" id="mPerBunch" inputmode="numeric" placeholder="10"></div>
+        <div class="field"><label>מס' אגדים</label><input type="number" id="mBunches" inputmode="numeric" placeholder="20"></div>
+        <div class="field"><label>דרגה (לא חובה)</label><select id="mStage"></select></div>
+      </div>
+      <button class="btn btn-add" onclick="addMixLine()" style="background:linear-gradient(135deg,#f9a825,#e65100)">➕ הוסף זן לקרטון</button>
+      <table><thead><tr><th>זן</th><th>אורך</th><th>יח'/אגד</th><th>אגדים</th><th>סה"כ</th><th></th></tr></thead>
+        <tbody id="mixLinesBody"><tr class="empty-row"><td colspan="6">אין זנים בקרטון המיקס עדיין</td></tr></tbody>
+      </table>
+      <button class="btn btn-add" onclick="closeMixCarton()" style="margin-top:8px">✓ סגור קרטון מיקס</button>
+    </div>
+
+    <table style="margin-top:14px"><thead><tr>
+      <th>#</th><th>תכולה</th><th>אורך</th><th>סה"כ ענפים</th><th>סוג</th><th></th>
+    </tr></thead>
+      <tbody id="cartonsBody"><tr class="empty-row"><td colspan="6">אין קרטונים עדיין</td></tr></tbody>
+    </table>
+    <div class="totals-bar">
+      <span>קרטונים: <b id="tCartons">0</b></span>
+      <span>סה"כ ענפים: <b id="tStems">0</b></span>
+    </div>
+  </div>
+
+  <div class="card no-print" style="text-align:center">
+    <button class="btn btn-print" onclick="generate()" style="font-size:1.05rem;padding:14px 24px">🏷️ תצוגה מקדימה</button>
+    <button class="btn" onclick="printZebra()" style="font-size:1.05rem;padding:14px 24px;margin-right:8px;background:linear-gradient(135deg,#00695c,#004d40)">🖨️ הדפס למדפסת</button>
+    <button class="btn" onclick="exportZPL()" style="font-size:.9rem;padding:14px 18px;margin-right:8px;background:#78909c;box-shadow:none">קוד ZPL</button>
+    <div id="printerStatus" style="margin-top:10px;font-size:.85rem"></div>
+  </div>
+
+  <div id="printZone"><div id="output"></div></div>
+  <div class="card no-print" id="printBtnCard" style="display:none;text-align:center">
+    <button class="btn btn-print" onclick="window.print()">🖨️ הדפס מדבקות</button>
+  </div>
+</div>
+
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>✏️ עריכת קרטון <span id="editCartonNum"></span></h2>
+      <p>שינוי כאן משפיע על הקרטון הזה בלבד</p>
+    </div>
+    <div style="padding:18px;" id="editBody"></div>
+    <div style="padding:0 18px 18px;display:flex;gap:10px;">
+      <button class="btn" style="flex:1" onclick="saveEdit()">💾 שמור שינויים</button>
+      <button class="btn" style="flex:1;background:#90a4ae;box-shadow:none" onclick="closeEdit()">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="zplOverlay">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head" style="background:linear-gradient(135deg,#00695c,#004d40)">
+      <h2>🖨️ קוד ZPL להדפסה תרמית</h2>
+      <p>Zebra ZD220 · 203dpi · מדבקה 100×75 מ"מ</p>
+    </div>
+    <div style="padding:18px;">
+      <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 12px;font-size:.85rem;color:#1b5e20;margin-bottom:12px;">
+        <b>איך מדפיסים:</b><br>
+        1. לחץ "העתק ZPL" (או "הורד קובץ")<br>
+        2. פתח <b>Zebra Setup Utilities</b> → Open Communication With Printer<br>
+        3. הדבק את הקוד ולחץ Send · או שלח את הקובץ למדפסת ב-USB
+      </div>
+      <textarea id="zplOutput" readonly style="width:100%;height:220px;font-family:monospace;font-size:.75rem;border:1.5px solid #d4dde8;border-radius:8px;padding:10px;background:#1a2533;color:#9be7d4;"></textarea>
+    </div>
+    <div style="padding:0 18px 18px;display:flex;gap:10px;">
+      <button class="btn" style="flex:1;background:linear-gradient(135deg,#00695c,#004d40)" onclick="copyZPL()">📋 העתק ZPL</button>
+      <button class="btn" style="flex:1;background:linear-gradient(135deg,#1565c0,#0d47a1)" onclick="downloadZPL()">💾 הורד קובץ</button>
+      <button class="btn" style="flex:1;background:#90a4ae;box-shadow:none" onclick="document.getElementById('zplOverlay').style.display='none'">סגור</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://oilbwsvwzxhsobmtmhlw.supabase.co';
+const SUPABASE_KEY='sb_publishable_-_Akw2cZOsagxTrNVFpidA_xCIxYgCk';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+// מצב: אם יש ?g=מספר בכתובת → מצב מגדל (נעול). אחרת → מצב אדמין (כל המגדלים)
+const urlGrower=new URLSearchParams(location.search).get('g');
+
+const DATA = {
+  growers: [],
+  destinations: [],
+  handlers: [],
+  categories: [],
+  stages: ["23","24","25","28","סגור","פתוח"]
+};
+
+let cartons = [];
+let mixBuffer = [];
+let editingIndex = null;
+let serialBase = 762700;
+
+function v(id){ return document.getElementById(id).value; }
+function selText(id){ const e=document.getElementById(id); return e.value===""?"":e.options[e.selectedIndex].textContent; }
+
+function fill(id, items, fmt){
+  const s=document.getElementById(id); s.innerHTML='<option value="">— בחר —</option>';
+  items.forEach((it,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=fmt(it); s.appendChild(o); });
+}
+
+function onGrower(){
+  const i=v('grower'); const box=document.getElementById('growerInfo');
+  if(i===""){ box.style.display='none'; return; }
+  const g=DATA.growers[i]; box.style.display='block';
+  let info='🌿 מס׳ מגדל: <b>'+g.num+'</b>';
+  if(g.sup) info+=' · ספק: <b>'+g.sup+'</b>';
+  if(g.ggn) info+=' · GGN: <b>'+g.ggn+'</b>';
+  box.innerHTML=info;
+  // מלא אוטומטית את מספר הספק
+  const se=document.getElementById('supNum');
+  if(se && g.sup) se.value=g.sup;
+  onGrowerAdmin();
+}
+function onCat(){ const i=v('cat'); fill('variety', i===""?[]:DATA.categories[i].varieties, function(vr){return vr.code+' · '+vr.desc;}); }
+function onMCat(){ const i=v('mCat'); fill('mVariety', i===""?[]:DATA.categories[i].varieties, function(vr){return vr.code+' · '+vr.desc;}); }
+function toggleMix(){
+  const mix=document.getElementById('isMix').checked;
+  document.getElementById('singleMode').style.display=mix?'none':'block';
+  document.getElementById('mixMode').style.display=mix?'block':'none';
+}
+function calcPreview(){
+  const pb=parseInt(v('perBunch'))||0, bu=parseInt(v('bunches'))||0;
+  document.getElementById('totalCalc').value=(pb&&bu)?(pb*bu):'';
+}
+
+function addSingle(){
+  const ci=v('cat'), vi=v('variety');
+  if(ci===""||vi===""){ alert('בחר סוג וזן'); return; }
+  if(!v('len')){
+    if(!confirm('⚠️ לא מילאת אורך.\n\nהאורך קובע את המחיר בבורסה. להוסיף בכל זאת בלי אורך?')){ document.getElementById('len').focus(); return; }
+  }
+  const variety=DATA.categories[ci].varieties[vi];
+  const pb=parseInt(v('perBunch'))||'', bu=parseInt(v('bunches'))||'';
+  let total=''; if(pb&&bu) total=pb*bu;
+  const qty=Math.max(1,parseInt(v('cartonQty'))||1);
+  const content={ desc:variety.desc, code:variety.code, len:v('len')||'', perBunch:pb, bunches:bu, total:total, stage:selText('stage'), packs:v('packs')||'', wgt:v('wgt')||'', ctype:v('cartonType')||'' };
+  for(let k=0;k<qty;k++) cartons.push({ type:'רגיל', contents:[Object.assign({},content)] });
+  ['len','perBunch','bunches','packs','wgt'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('totalCalc').value=''; document.getElementById('cartonQty').value='1';
+  renderCartons();
+}
+
+function addMixLine(){
+  const ci=v('mCat'), vi=v('mVariety');
+  if(ci===""||vi===""){ alert('בחר סוג וזן'); return; }
+  if(!v('mLen')){
+    if(!confirm('⚠️ לא מילאת אורך.\n\nהאורך קובע מחיר בבורסה. להוסיף בכל זאת?')){ document.getElementById('mLen').focus(); return; }
+  }
+  const variety=DATA.categories[ci].varieties[vi];
+  const pb=parseInt(v('mPerBunch'))||'', bu=parseInt(v('mBunches'))||'';
+  const total=(pb&&bu)?pb*bu:'';
+  mixBuffer.push({ desc:variety.desc, code:variety.code, len:v('mLen')||'', perBunch:pb, bunches:bu, total:total, stage:v('mStage'), packs:'' });
+  ['mLen','mPerBunch','mBunches'].forEach(function(id){document.getElementById(id).value='';});
+  renderMixBuffer();
+}
+function delMixLine(i){ mixBuffer.splice(i,1); renderMixBuffer(); }
+function renderMixBuffer(){
+  const b=document.getElementById('mixLinesBody');
+  if(!mixBuffer.length){ b.innerHTML='<tr class="empty-row"><td colspan="6">אין זנים בקרטון המיקס עדיין</td></tr>'; return; }
+  b.innerHTML=mixBuffer.map(function(l,i){ return '<tr><td>'+l.desc+'</td><td>'+(l.len||'—')+'</td><td>'+(l.perBunch||'—')+'</td><td>'+(l.bunches||'—')+'</td><td><b>'+(l.total||'—')+'</b></td><td><button class="btn btn-sm btn-del no-print" onclick="delMixLine('+i+')">✕</button></td></tr>'; }).join('');
+}
+function closeMixCarton(){
+  if(mixBuffer.length<1){ alert('הוסף לפחות זן אחד'); return; }
+  if(mixBuffer.length>3){ alert('קרטון מיקס תומך בעד 3 זנים'); return; }
+  cartons.push({ type:'מיקס', contents:mixBuffer.slice() });
+  mixBuffer=[]; renderMixBuffer(); renderCartons();
+}
+
+function delCarton(i){ cartons.splice(i,1); renderCartons(); }
+
+function openEdit(i){
+  editingIndex=i;
+  const c=cartons[i]; if(!c) return;
+  document.getElementById('editCartonNum').textContent=(i+1)+' '+(c.type==='מיקס'?'(מיקס)':'');
+  const body=document.getElementById('editBody');
+  body.innerHTML=c.contents.map(function(x,ci){
+    return '<div style="border:1.5px solid #e0e8f0;border-radius:10px;padding:12px;margin-bottom:'+(c.contents.length>1?'12px':'0')+';">'
+      +'<div style="font-weight:700;color:#0d47a1;margin-bottom:4px;">'+x.desc+'</div>'
+      +'<div style="font-size:.82rem;color:#7a8aa0;margin-bottom:10px;">יח\' באגד: <b>'+(x.perBunch||'—')+'</b> (קבוע) · התיקון על מספר האגדים</div>'
+      +'<div class="row3">'
+      +'<div class="field qty-field"><label>מס\' אגדים</label><input type="number" id="e-bunches-'+ci+'" value="'+(x.bunches||'')+'" oninput="editPreview('+ci+','+(x.perBunch||0)+')"></div>'
+      +'<div class="field qty-field"><label>= סה"כ כמות</label><input type="number" id="e-total-'+ci+'" value="'+(x.total||'')+'" readonly style="background:#fff;font-weight:700;color:#0d47a1;"></div>'
+      +'<div class="field"><label>אורך</label><input type="number" id="e-len-'+ci+'" value="'+(x.len||'')+'"></div>'
+      +'</div><div class="row3">'
+      +'<div class="field"><label>משקל (Wgt)</label><input type="number" id="e-wgt-'+ci+'" value="'+(x.wgt||'')+'" placeholder="—"></div>'
+      +'<div class="field"><label>דרגת פתיחה (לא חובה)</label><input type="text" id="e-stage-'+ci+'" value="'+(x.stage||'')+'"></div>'
+      +'<div class="field"><label>חבילות (תצוגה)</label><input type="number" id="e-packs-'+ci+'" value="'+(x.packs||'')+'"></div>'
+      +'</div></div>';
+  }).join('');
+  document.getElementById('editOverlay').style.display='flex';
+}
+function editPreview(ci, perBunch){
+  const bu=parseInt(document.getElementById('e-bunches-'+ci).value)||0;
+  document.getElementById('e-total-'+ci).value=(perBunch&&bu)?(perBunch*bu):'';
+}
+function closeEdit(){ document.getElementById('editOverlay').style.display='none'; editingIndex=null; }
+function saveEdit(){
+  const c=cartons[editingIndex]; if(!c){ closeEdit(); return; }
+  c.contents.forEach(function(x,ci){
+    x.bunches=parseInt(document.getElementById('e-bunches-'+ci).value)||'';
+    x.total=(x.perBunch&&x.bunches)?(x.perBunch*x.bunches):'';
+    x.len=document.getElementById('e-len-'+ci).value||'';
+    x.wgt=document.getElementById('e-wgt-'+ci).value||'';
+    x.stage=document.getElementById('e-stage-'+ci).value||'';
+    x.packs=document.getElementById('e-packs-'+ci).value||'';
+  });
+  closeEdit(); renderCartons();
+}
+
+function renderCartons(){
+  const b=document.getElementById('cartonsBody');
+  if(!cartons.length){ b.innerHTML='<tr class="empty-row"><td colspan="6">אין קרטונים עדיין</td></tr>'; }
+  else {
+    b.innerHTML=cartons.map(function(c,i){
+      const desc=c.contents.map(function(x){return x.desc;}).join(' + ');
+      const len=c.contents.map(function(x){return x.len;}).filter(Boolean).join('/');
+      const tot=c.contents.reduce(function(s,x){return s+(parseInt(x.total)||0);},0);
+      const totDisplay=tot>0?tot:'—';
+      const wgts=c.contents.map(function(x){return x.wgt;}).filter(Boolean).join('/');
+      const tag=c.type==='מיקס'?'<span class="seg" style="background:#fff3e0;color:#e65100">מיקס</span>':'רגיל';
+      return '<tr><td>'+(i+1)+'</td><td>'+desc+(wgts?' · '+wgts+'ג':'')+'</td><td>'+(len||'—')+'</td><td><b>'+totDisplay+'</b></td><td>'+tag+'</td>'
+        +'<td style="white-space:nowrap"><button class="btn btn-sm no-print" style="background:#1565c0;box-shadow:none" onclick="openEdit('+i+')">✏️</button> <button class="btn btn-sm btn-del no-print" onclick="delCarton('+i+')">✕</button></td></tr>';
+    }).join('');
+  }
+  document.getElementById('tCartons').textContent=cartons.length;
+  document.getElementById('tStems').textContent=cartons.reduce(function(s,c){return s+c.contents.reduce(function(a,x){return a+(parseInt(x.total)||0);},0);},0);
+  saveState();
+}
+
+function saveState(){
+  try { window._gs=JSON.stringify({ cartons:cartons, grower:v('grower'), handler:v('handler'), dest:v('dest'), transport:v('transport'), delivery:v('delivery') }); } catch(e){}
+}
+function restoreState(){
+  try {
+    if(!window._gs) return;
+    const s=JSON.parse(window._gs);
+    if(s.cartons&&s.cartons.length){
+      cartons=s.cartons;
+      if(s.grower!==undefined) document.getElementById('grower').value=s.grower;
+      if(s.handler!==undefined) document.getElementById('handler').value=s.handler;
+      if(s.dest!==undefined) document.getElementById('dest').value=s.dest;
+      if(s.transport!==undefined) document.getElementById('transport').value=s.transport;
+      if(s.delivery) document.getElementById('delivery').value=s.delivery;
+      onGrower(); renderCartons();
+    }
+  } catch(e){}
+}
+
+function genDataMatrix(canvas, text){
+  try {
+    if(typeof bwipjs==='undefined'||!canvas) return;
+    bwipjs.toCanvas(canvas, { bcid:'datamatrix', text:String(text), scale:3, height:10, width:10, includetext:false });
+  } catch(e){ console.error('DM:', e); }
+}
+
+function generate(){
+  if(v('grower')===""){ alert('בחר מגדל'); return; }
+  if(!cartons.length){ alert('הוסף לפחות קרטון אחד'); return; }
+  // מזהה קרטון ייחודי - נוצר מחדש בכל הפקה
+  serialBase = parseInt(String(Date.now()).slice(-8));
+  const noLen=cartons.filter(function(c){return c.contents.some(function(x){return !x.len;});}).length;
+  if(noLen>0){ if(!confirm('⚠️ '+noLen+' קרטונים ללא אורך.\n\nהאורך קובע מחיר בבורסה. להפיק בכל זאת?')) return; }
+  const g=DATA.growers[v('grower')];
+  g.sup = v('supNum')||''; // מספר ספק פנימי לקובץ פריורטי
+  const di=v('dest'); const dest=di===""?{code:'',name:'—'}:DATA.destinations[di];
+  const handler=v('handler')===""?'(פורק)':selText('handler');
+  const transport=v('transport');
+  const delivery=v('delivery');
+  const total=cartons.length;
+
+  let html='<div class="card no-print" style="background:#e8f5e9;border:1px solid #a5d6a7"><b style="color:#1b5e20">✓ תעודה '+delivery+'</b> · '+total+' קרטונים · '+g.name+' · '+dest.code+' '+dest.name+'</div><div class="labels-scroll">';
+
+  cartons.forEach(function(c,idx){
+    const n=idx+1;
+    const serial=String(serialBase+idx).slice(-8).padStart(8,'0');
+    let rows='';
+    for(let r=0;r<3;r++){
+      const x=c.contents[r];
+      rows+='<tr><td class="c-qty">'+(x?(x.total||''):'')+'</td><td class="c-code">'+(x?(x.code||''):'')+'</td><td class="c-prod">'+(x?x.desc:'')+'</td><td class="c-len">'+(x?(x.len||''):'')+'</td><td class="c-wgt">'+(x?(x.wgt||''):'')+'</td><td class="c-oth">'+(x?(x.stage||''):'')+'</td></tr>';
+    }
+    html+='<div class="label-pair"><div class="picker-label"><div class="pk-logo">🌿</div>'+handler+'</div>'
+      +'<div class="label"><div class="lbl-head"><div class="lbl-head-left">'
+      +'<span class="lbl-transport">'+transport+'</span><span class="lbl-delivery">Delivery '+delivery+'</span>'
+      +'<div class="lbl-dest">'+dest.code+' '+dest.name+'</div>'
+      +'<div class="lbl-gr">Gr: '+g.num+(g.code?' '+g.code:'')+' '+g.name+'</div></div>'
+      +'<div class="lbl-dm"><canvas id="dm-'+n+'"></canvas><div class="dmnum">'+serial+'</div></div></div>'
+      +'<table class="lbl-table"><tr><th class="c-qty">Qty</th><th class="c-code">Code</th><th class="c-prod">Product</th><th class="c-len">Len</th><th class="c-wgt">Wgt</th><th class="c-oth">Oth</th></tr>'+rows+'</table>'
+      +'<div class="lbl-foot"><div class="lbl-foot-black">Flower Board Israel | office@fbi.org.il | CUT FLOWERS | Produce of Israel</div>'
+      +'<div class="lbl-carton">Carton No '+n+'<br>'+n+' from '+total+'</div></div></div></div>';
+  });
+  html+='</div>';
+  document.getElementById('output').innerHTML=html;
+
+  cartons.forEach(function(c,idx){
+    const n=idx+1; const serial=String(serialBase+idx).slice(-8).padStart(8,'0');
+    setTimeout(function(){ genDataMatrix(document.getElementById('dm-'+n), serial); }, 60);
+  });
+
+  document.getElementById('printBtnCard').style.display='block';
+  document.getElementById('output').scrollIntoView({behavior:'smooth',block:'start'});
+  saveState();
+}
+
+// ===== ייצוא ZPL למדפסת תרמית Zebra ZD220 (203dpi, 100x75mm) =====
+// 203dpi: 100mm ≈ 800 dots רוחב, 75mm ≈ 600 dots גובה
+function zplEscape(s){ return String(s||'').replace(/\^/g,' ').replace(/~/g,' '); }
+
+function buildZPL(){
+  if(v('grower')===""){ alert('בחר מגדל'); return null; }
+  if(!cartons.length){ alert('הוסף לפחות קרטון אחד'); return null; }
+  // מזהה קרטון ייחודי - נוצר מחדש בכל הפקה
+  serialBase = parseInt(String(Date.now()).slice(-8));
+  const g=DATA.growers[v('grower')];
+  const di=v('dest'); const dest=di===""?{code:'',name:'—'}:DATA.destinations[di];
+  const handler=v('handler')===""?'':selText('handler');
+  const transport=v('transport');
+  const delivery=v('delivery');
+  const total=cartons.length;
+  let zpl='';
+
+  cartons.forEach(function(c,idx){
+    const n=idx+1;
+    const serial='00'+(serialBase+idx);
+    const x=c.contents[0]; // שורה ראשית (מיקס: נוסיף שורות)
+
+    // ---- מדבקת פורק (נפרדת) - אותיות גדולות ----
+    if(handler){
+      zpl+='^XA\n^CI28\n^PW800\n^LL600\n';
+      zpl+='^FO30,210^A0N,110,110^FB740,2,10,C,0^FD'+zplEscape(handler)+'^FS\n';
+      zpl+='^XZ\n';
+    }
+
+    // ---- מדבקה ראשית ----
+    zpl+='^XA\n^CI28\n^PW800\n^LL600\n';
+    // מסגרת
+    zpl+='^FO20,20^GB760,560,3^FS\n';
+    // הובלה (Air) - מסגרת קטנה
+    zpl+='^FO600,40^GB150,60,2^FS\n';
+    zpl+='^FO600,50^A0N,45,45^FB150,1,0,C,0^FD'+zplEscape(transport)+'^FS\n';
+    // Delivery
+    zpl+='^FO230,45^A0N,28,28^FD Delivery '+zplEscape(delivery)+'^FS\n';
+    // יעד (גדול)
+    zpl+='^FO230,80^A0N,52,52^FD'+zplEscape(dest.name+' '+dest.code)+'^FS\n';
+    // Gr - מגדל (מוגדל)
+    zpl+='^FO230,140^A0N,40,40^FD Gr: '+zplEscape(g.num)+'^FS\n';
+    zpl+='^FO230,185^A0N,34,34^FD'+zplEscape(g.name)+'^FS\n';
+    // DataMatrix - מכיל את כל נתוני הקרטון (אין צורך במאגר)
+    // פורמט: ספק|מגדל|קוד זן|אורך|כמות|דרגה|אגדים|חבילות|מזהה|בורסה|פורק|משקל|הובלה|סוג קרטון
+    let dmData = (g.sup||'')+'|'+g.num+'|'+zplEscape(x?x.code:'')+'|'+zplEscape(x?x.len:'')
+      +'|'+zplEscape(x?x.total:'')+'|'+zplEscape(x?x.stage:'')
+      +'|'+zplEscape(x?x.bunches:'')+'|'+zplEscape(x?x.packs:'')
+      +'|'+serial+'|'+dest.code
+      +'|'+zplEscape(handler)+'|'+zplEscape(x?x.wgt:'')+'|'+zplEscape(transport)
+      +'|'+zplEscape(x?x.ctype:'');
+    zpl+='^FO45,45^BXN,5,200^FD'+dmData+'^FS\n';
+    zpl+='^FO45,175^A0N,22,22^FD'+serial+'^FS\n';
+    // קו הפרדה
+    zpl+='^FO40,270^GB720,3,3^FS\n';
+    // כותרות טבלה - זהה לתצוגה המקדימה + Code
+    zpl+='^FO45,285^A0N,24,24^FD Qty^FS\n';
+    zpl+='^FO140,285^A0N,24,24^FD Code^FS\n';
+    zpl+='^FO250,285^A0N,24,24^FD Product^FS\n';
+    zpl+='^FO570,285^A0N,24,24^FD Len^FS\n';
+    zpl+='^FO650,285^A0N,24,24^FD Wgt^FS\n';
+    zpl+='^FO725,285^A0N,24,24^FD Oth^FS\n';
+    zpl+='^FO40,318^GB720,2,2^FS\n';
+    // שורות תוכן (עד 3)
+    let ty=332;
+    c.contents.forEach(function(item){
+      zpl+='^FO45,'+ty+'^A0N,28,28^FD'+zplEscape(item.total)+'^FS\n';
+      zpl+='^FO140,'+ty+'^A0N,26,26^FD'+zplEscape(item.code)+'^FS\n';
+      zpl+='^FO250,'+ty+'^A0N,26,26^FD'+zplEscape(item.desc)+'^FS\n';
+      zpl+='^FO570,'+ty+'^A0N,28,28^FD'+zplEscape(item.len)+'^FS\n';
+      zpl+='^FO650,'+ty+'^A0N,28,28^FD'+zplEscape(item.wgt)+'^FS\n';
+      zpl+='^FO725,'+ty+'^A0N,28,28^FD'+zplEscape(item.stage)+'^FS\n';
+      ty+=42;
+    });
+    // פס שחור תחתון (כמו בתצוגה המקדימה)
+    zpl+='^FO40,480^GB720,34,34^FS\n';
+    zpl+='^FO55,488^A0N,20,20^FR^FDFlower Board Israel | office@fbi.org.il | CUT FLOWERS | Produce of Israel^FS\n';
+    zpl+='^FO450,530^A0N,32,32^FD Carton '+n+' / '+total+'^FS\n';
+    zpl+='^XZ\n';
+  });
+  return zpl;
+}
+
+// ===== הדפסה ישירה דרך Zebra Browser Print =====
+// מנסה קודם את ה-API המקומי של Browser Print (127.0.0.1:9100)
+function printZebra(){
+  const zpl=buildZPL();
+  if(zpl===null) return;
+  const status=document.getElementById('printerStatus');
+  status.innerHTML='<span style="color:#00695c">⏳ מתחבר למדפסת...</span>';
+
+  // Browser Print חושף שירות מקומי. ננסה כמה כתובות (http/https)
+  const bases=['http://127.0.0.1:9100','https://127.0.0.1:9101','http://localhost:9100'];
+  tryBrowserPrint(bases, 0, zpl, status);
+}
+
+function tryBrowserPrint(bases, i, zpl, status){
+  if(i>=bases.length){ showPrinterHelp(status); return; }
+  const base=bases[i];
+  // קרא את רשימת המדפסות הזמינות (/available מחזיר את המדפסות המחוברות)
+  fetch(base+'/available', { method:'GET' })
+    .then(function(r){ if(!r.ok) throw new Error('bad'); return r.json(); })
+    .then(function(res){
+      // res.printer הוא מערך של מדפסות
+      const printers = (res && res.printer) ? res.printer : [];
+      if(!printers.length) throw new Error('no printer');
+      const printer = printers[0]; // המדפסת הראשונה (ה-ZD220)
+      fetch(base+'/write', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ device:printer, data:zpl })
+      }).then(function(){
+        status.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשלח למדפסת '+(printer.name||'')+' — '+cartons.length+' מדבקות</span>';
+      }).catch(function(err){
+        status.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשלח למדפסת ('+cartons.length+' מדבקות)</span>';
+      });
+    })
+    .catch(function(){ tryBrowserPrint(bases, i+1, zpl, status); });
+}
+
+function showPrinterHelp(status){
+  status.innerHTML='<div style="background:#fff3e0;border:1px solid #ffb74d;border-radius:8px;padding:10px 14px;text-align:right;color:#e65100;font-size:.85rem;margin-top:6px;">'
+    +'⚠️ <b>המדפסת לא נמצאה.</b> ודא ש:<br>'
+    +'1. <b>Zebra Browser Print</b> רץ (אייקון Zebra ליד השעון)<br>'
+    +'2. המערכת רצה מ-<b>Netlify (https)</b> ולא מקובץ מקומי — הדפסה ישירה עובדת רק מ-https<br>'
+    +'3. ה-ZD220 מוגדרת כברירת מחדל ב-Browser Print<br>'
+    +'<span style="color:#78909c">לבדיקה: כפתור "קוד ZPL" → הורד קובץ.</span></div>';
+}
+
+function exportZPL(){
+  const zpl=buildZPL();
+  if(zpl===null) return;
+  document.getElementById('zplOutput').value=zpl;
+  document.getElementById('zplOverlay').style.display='flex';
+}
+
+function copyZPL(){
+  const ta=document.getElementById('zplOutput');
+  ta.select(); document.execCommand('copy');
+  alert('✓ ה-ZPL הועתק! הדבק אותו ב-Zebra Setup Utilities ולחץ Send.');
+}
+function downloadZPL(){
+  const zpl=document.getElementById('zplOutput').value;
+  const blob=new Blob([zpl],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='labels_'+v('delivery')+'.zpl';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ===== טעינה מ-Supabase =====
+async function loadFromDB(){
+  const st=document.getElementById('loadStatus');
+  try{
+    const [gRes,vRes,eRes,hRes,gvRes,geRes,ghRes,ctRes]=await Promise.all([
+      db.from('growers').select('*').order('name'),
+      db.from('varieties').select('*').order('descr'),
+      db.from('exchanges').select('*').order('code'),
+      db.from('handlers').select('*').order('name'),
+      db.from('grower_varieties').select('*'),
+      db.from('grower_exchanges').select('*'),
+      db.from('grower_handlers').select('*'),
+      db.from('carton_types').select('*').order('name')
+    ]);
+    const allG=gRes.data||[], allV=vRes.data||[], allE=eRes.data||[], allH=hRes.data||[];
+    const gv=gvRes.data||[], ge=geRes.data||[], gh=ghRes.data||[];
+    const cts=ctRes.data||[];
+    // סוגי קרטון - כל המגדלים רואים את כולם
+    const ctSel=document.getElementById('cartonType');
+    ctSel.innerHTML='<option value="">— בחר —</option>'+cts.map(function(c){ return '<option value="'+c.name+'">'+c.name+'</option>'; }).join('');
+
+    // מצב מגדל - רק המגדל שבכתובת
+    let myGrowers = urlGrower ? allG.filter(function(g){ return g.grower_num===urlGrower; }) : allG;
+    if(urlGrower && !myGrowers.length){
+      st.innerHTML='<span style="color:#ffcdd2">⚠️ מגדל '+urlGrower+' לא נמצא במערכת</span>';
+      return;
+    }
+    DATA.growers=myGrowers.map(function(g){ return { num:g.grower_num, code:'', name:g.name, ggn:g.ggn||'', sup:g.sup||'' }; });
+
+    // סינון לפי הצמדות (במצב מגדל)
+    function allowed(list, links, key, field){
+      if(!urlGrower) return list;
+      const mine=new Set(links.filter(function(r){ return r.grower_num===urlGrower; }).map(function(r){ return r[key]; }));
+      return mine.size ? list.filter(function(x){ return mine.has(x[field]); }) : list;
+    }
+    const myV=allowed(allV,gv,'variety_code','code');
+    const myE=allowed(allE,ge,'exchange_code','code');
+    const myH=allowed(allH,gh,'handler_name','name');
+
+    DATA.categories = myV.length ? [{ name:'הזנים שלי', varieties:myV.map(function(x){ return {code:x.code,desc:x.descr}; }) }] : [];
+    DATA.destinations = myE.map(function(x){ return {code:x.code,name:x.name}; });
+    DATA.handlers = myH.map(function(x){ return x.name; });
+
+    // מילוי הבוררים
+    fill('grower',DATA.growers,function(g){return g.name+' ('+g.num+')';});
+    fill('handler',DATA.handlers,function(h){return h;});
+    fill('dest',DATA.destinations,function(d){return d.code+' '+d.name;});
+    fill('cat',DATA.categories,function(c){return c.name;});
+    fill('mCat',DATA.categories,function(c){return c.name;});
+    fill('stage',DATA.stages,function(s){return s;});
+    fill('mStage',DATA.stages,function(s){return s;});
+
+    if(urlGrower){
+      // מצב מגדל - נעל על המגדל
+      document.getElementById('grower').value='0';
+      document.getElementById('grower').disabled=true;
+      onGrower();
+      if(DATA.categories.length){ document.getElementById('cat').value='0'; onCat(); }
+      if(DATA.destinations.length===1) document.getElementById('dest').value='0';
+      if(DATA.handlers.length===1) document.getElementById('handler').value='0';
+      st.innerHTML='✅ '+DATA.growers[0].name+' · '+myV.length+' זנים · '+myE.length+' בורסות · '+myH.length+' פורקים';
+    } else {
+      st.innerHTML='✅ מצב אדמין · '+allG.length+' מגדלים · '+allV.length+' זנים';
+    }
+  }catch(e){
+    console.error(e);
+    st.innerHTML='<span style="color:#ffcdd2">⚠️ שגיאה בטעינה: '+e.message+'</span>';
+  }
+}
+
+// באדמין: בחירת מגדל מסננת את הזנים/בורסות/פורקים שלו
+async function onGrowerAdmin(){
+  if(urlGrower) return;
+  const i=v('grower'); if(i==='') return;
+  const gnum=DATA.growers[i].num;
+  try{
+    const [vAll,eAll,hAll,gv,ge,gh]=await Promise.all([
+      db.from('varieties').select('*').order('descr'),
+      db.from('exchanges').select('*').order('code'),
+      db.from('handlers').select('*').order('name'),
+      db.from('grower_varieties').select('*').eq('grower_num',gnum),
+      db.from('grower_exchanges').select('*').eq('grower_num',gnum),
+      db.from('grower_handlers').select('*').eq('grower_num',gnum)
+    ]);
+    const vs=new Set((gv.data||[]).map(function(r){return r.variety_code;}));
+    const es=new Set((ge.data||[]).map(function(r){return r.exchange_code;}));
+    const hs=new Set((gh.data||[]).map(function(r){return r.handler_name;}));
+    const myV=vs.size?(vAll.data||[]).filter(function(x){return vs.has(x.code);}):(vAll.data||[]);
+    const myE=es.size?(eAll.data||[]).filter(function(x){return es.has(x.code);}):(eAll.data||[]);
+    const myH=hs.size?(hAll.data||[]).filter(function(x){return hs.has(x.name);}):(hAll.data||[]);
+    DATA.categories=myV.length?[{name:'הזנים של המגדל',varieties:myV.map(function(x){return {code:x.code,desc:x.descr};})}]:[];
+    DATA.destinations=myE.map(function(x){return {code:x.code,name:x.name};});
+    DATA.handlers=myH.map(function(x){return x.name;});
+    fill('cat',DATA.categories,function(c){return c.name;});
+    fill('mCat',DATA.categories,function(c){return c.name;});
+    fill('dest',DATA.destinations,function(d){return d.code+' '+d.name;});
+    fill('handler',DATA.handlers,function(h){return h;});
+    if(DATA.categories.length){ document.getElementById('cat').value='0'; onCat(); }
+  }catch(e){ console.error(e); }
+}
+
+// ===== אתחול =====
+document.getElementById('delivery').value=(1300000+Math.floor(Math.random()*99999));
+loadFromDB();
+restoreState();
+</script>
+</body>
+</html>
