@@ -502,8 +502,8 @@ function buildZPL(){
     z+='^FO230,80^A0N,52,52^FD'+esc(x.dest.name+' '+x.dest.code)+'^FS\n';
     z+='^FO230,140^A0N,40,40^FD Gr: '+esc(x.g.grower_num)+'^FS\n';
     z+='^FO230,185^A0N,34,34^FD'+esc(x.g.name)+'^FS\n';
-    z+='^FO45,45^BXN,6,200^FD'+dm+'^FS\n';
-    z+='^FO45,190^A0N,22,22^FD'+serial+'^FS\n';
+    z+='^FO45,40^BXN,5,200^FD'+dm+'^FS\n';
+    z+='^FO40,175^A0N,22,22^FD'+serial+'^FS\n';
     z+='^FO40,270^GB720,3,3^FS\n';
     z+='^FO45,285^A0N,24,24^FD Qty^FS\n^FO140,285^A0N,24,24^FD Code^FS\n^FO250,285^A0N,24,24^FD Product^FS\n';
     z+='^FO570,285^A0N,24,24^FD Len^FS\n^FO650,285^A0N,24,24^FD Wgt^FS\n^FO725,285^A0N,24,24^FD Oth^FS\n';
