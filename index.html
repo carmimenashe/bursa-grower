@@ -134,7 +134,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה B2+P2</span></h1>
+        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה B2+P3</span></h1>
         <p>בית האריזה · מדבקה 100×75 מ"מ (Zebra ZD220)</p>
       </div>
       <a href="https://transcendent-dragon-55ce11.netlify.app" class="no-print" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:700;white-space:nowrap">🏠 דף הבית</a>
@@ -259,25 +259,15 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
       </div>
 
       <div class="row3">
-        <div class="field"><label>שעה / חלון זמן</label><input type="text" id="pkTime" placeholder="בוקר / 14:00"></div>
         <div class="field"><label>מס' משטחים משוער</label><input type="number" id="pkPallets" inputmode="numeric" placeholder="2"></div>
-        <div class="field"><label>מס' קרטונים משוער</label><input type="number" id="pkCartons" inputmode="numeric" placeholder="40"></div>
-      </div>
-
-      <div class="row3">
-        <div class="field"><label>סוג קרטון</label><select id="pkCtype"><option value="">—</option></select></div>
         <div class="field"><label>הובלה</label><select id="pkTransport"><option>Air</option><option>Sea</option></select></div>
-        <div class="field"><label>יעד</label>
-          <input type="text" id="pkDepotName" readonly style="background:#f5f8fc"></div>
+        <div class="field"><label>בורסה</label><select id="pkDest"><option value="">—</option></select></div>
       </div>
 
-      <div class="field">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" id="pkAddBursa" onchange="pkDestToggle()" style="width:auto">
-          המשלוח מיועד גם לבורסה
-        </label>
-        <select id="pkDest" style="display:none;margin-top:6px"><option value="">— בחר בורסה —</option></select>
-      </div>
+      <label>קרטונים משוערים</label>
+      <div id="pkRows"></div>
+      <button type="button" onclick="pkAddRow()" style="background:#ede7f6;color:#4527a0;border:none;border-radius:8px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:.85rem;margin-top:4px">➕ הוסף סוג קרטון</button>
+      <div id="pkTotal" style="font-size:.85rem;color:#6b7a90;margin-top:6px"></div>
 
       <h2 style="margin-top:18px">פרטי איסוף</h2>
       <p style="font-size:.8rem;color:#6b7a90;margin-bottom:10px">נטען אוטומטית מכרטיס המגדל — ניתן לתקן להזמנה הזו בלבד</p>
@@ -844,13 +834,10 @@ function pkInit(){
   const gs=document.getElementById('pkGrower');
   gs.innerHTML='<option value="">—</option>'+GROWERS.map(function(g,i){
     return '<option value="'+i+'">'+g.name+' ('+g.grower_num+')</option>'; }).join('');
-  const cs=document.getElementById('pkCtype');
-  cs.innerHTML='<option value="">—</option>'+CTYPES.map(function(c,i){
-    return '<option value="'+i+'">'+c.name+'</option>'; }).join('');
-  document.getElementById('pkDepotName').value=SETTINGS.depot_name||'';
   const ds=document.getElementById('pkDest');
   ds.innerHTML='<option value="">—</option>'+DESTS.map(function(d,i){
     return '<option value="'+i+'">'+d.code+' '+d.name+'</option>'; }).join('');
+  if(!document.querySelectorAll('#pkRows .pk-row').length) pkAddRow();
   pkReady=true;
 }
 
@@ -867,17 +854,46 @@ function pkFillGrower(){
   document.getElementById('pkNotes').value=g.notes||'';
   loadMyPickups(g.grower_num);
 }
-function pkDestToggle(){
-  document.getElementById('pkDest').style.display=
-    document.getElementById('pkAddBursa').checked?'block':'none';
+// ---- שורות קרטונים: כמות + סוג, כמה שצריך ----
+function pkCtypeOptions(){
+  return '<option value="">— סוג קרטון —</option>'+CTYPES.map(function(c,i){
+    return '<option value="'+i+'">'+c.name+'</option>'; }).join('');
 }
-// היעד תמיד הדפו. בורסה נוספת אליו אם סומנה.
+function pkAddRow(){
+  const wrap=document.getElementById('pkRows');
+  const d=document.createElement('div');
+  d.className='pk-row';
+  d.style.cssText='display:grid;grid-template-columns:110px 1fr 38px;gap:8px;margin-bottom:7px;align-items:center';
+  d.innerHTML='<input type="number" class="pk-qty" inputmode="numeric" placeholder="כמות" oninput="pkSum()">'
+    +'<select class="pk-ct">'+pkCtypeOptions()+'</select>'
+    +'<button type="button" onclick="this.parentNode.remove();pkSum()" style="background:#e53935;color:#fff;border:none;border-radius:8px;padding:9px 0;cursor:pointer;font-weight:700">✕</button>';
+  wrap.appendChild(d);
+  pkSum();
+}
+function pkLines(){
+  const out=[];
+  document.querySelectorAll('#pkRows .pk-row').forEach(function(r){
+    const q=parseInt(r.querySelector('.pk-qty').value)||0;
+    const ci=r.querySelector('.pk-ct').value;
+    if(!q) return;
+    out.push({ qty:q, type:(ci!==''&&CTYPES[ci])?CTYPES[ci].name:'' });
+  });
+  return out;
+}
+function pkSum(){
+  const l=pkLines();
+  const t=l.reduce(function(s,x){return s+x.qty;},0);
+  document.getElementById('pkTotal').innerHTML=t?('סה"כ <b>'+t+'</b> קרטונים ב-'+l.length+' סוגים'):'';
+  return t;
+}
+function pkCartonText(){
+  return pkLines().map(function(x){ return x.qty+'×'+(x.type||'לא צוין'); }).join(' + ');
+}
+// היעד: הדפו תמיד, ובורסה בנוסף אם נבחרה
 function pkDestText(){
   let t=SETTINGS.depot_name||'';
-  if(document.getElementById('pkAddBursa').checked){
-    const i=v('pkDest');
-    if(i!==''){ const d=DESTS[i]; if(d) t+=' → '+d.code+' '+d.name; }
-  }
+  const i=v('pkDest');
+  if(i!==''){ const d=DESTS[i]; if(d) t+=' → '+d.code+' '+d.name; }
   return t;
 }
 function pkWaText(){
@@ -886,9 +902,9 @@ function pkWaText(){
   const parts=[];
   parts.push('🚚 בקשת איסוף');
   parts.push('מגדל: '+(g.name||'')+' ('+(g.grower_num||'')+')');
-  parts.push('תאריך: '+(v('pkDate')||'—')+(v('pkTime')?' · '+v('pkTime'):''));
-  parts.push('כמות משוערת: '+(v('pkPallets')||0)+' משטחים · '+(v('pkCartons')||0)+' קרטונים');
-  if(v('pkCtype')!=='') parts.push('סוג קרטון: '+CTYPES[v('pkCtype')].name);
+  parts.push('תאריך: '+(v('pkDate')||'—'));
+  parts.push('משטחים משוער: '+(v('pkPallets')||0));
+  parts.push('קרטונים: '+pkSum()+(pkCartonText()?' ('+pkCartonText()+')':''));
   parts.push('הובלה: '+v('pkTransport')+' · יעד: '+(pkDestText()||'—'));
   parts.push('כתובת: '+(v('pkAddr')||'')+(v('pkCity')?', '+v('pkCity'):''));
   if(v('pkPhone')) parts.push('טלפון: '+v('pkPhone'));
@@ -909,10 +925,10 @@ async function savePickup(){
   const g=GROWERS[i];
   const row={
     grower_num:g.grower_num, grower_name:g.name,
-    pickup_date:v('pkDate'), pickup_time:v('pkTime')||null,
+    pickup_date:v('pkDate'), pickup_time:null,
     est_pallets:parseInt(v('pkPallets'))||0,
-    est_cartons:parseInt(v('pkCartons'))||0,
-    carton_type:v('pkCtype')!==''?CTYPES[v('pkCtype')].name:null,
+    est_cartons:pkSum(),
+    carton_type:pkCartonText()||null,
     address:v('pkAddr')||null, city:v('pkCity')||null,
     phone:v('pkPhone')||null, contact:v('pkContact')||null,
     transport:v('pkTransport'), destination:pkDestText()||null,
