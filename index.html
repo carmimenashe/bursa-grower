@@ -134,7 +134,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה B2</span></h1>
+        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה B2+P2</span></h1>
         <p>בית האריזה · מדבקה 100×75 מ"מ (Zebra ZD220)</p>
       </div>
       <a href="https://transcendent-dragon-55ce11.netlify.app" class="no-print" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:700;white-space:nowrap">🏠 דף הבית</a>
@@ -146,6 +146,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
     <div class="tabs no-print">
       <button id="tabLabels" aria-pressed="true" onclick="showView('labels')">🏷️ מדבקות</button>
       <button id="tabHist" aria-pressed="false" onclick="showView('hist')">📋 היסטוריה</button>
+      <button id="tabPick" aria-pressed="false" onclick="showView('pick')">🚚 הזמנת הובלה</button>
       <button onclick="openSettings()" style="margin-right:auto;background:rgba(255,255,255,.18)">⚙️ הגדרות</button>
     </div>
   </header>
@@ -246,6 +247,63 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
   </div>
   </div><!-- /viewLabels -->
 
+  <div id="viewPickup" style="display:none">
+    <div class="card">
+      <h2>🚚 הזמנת הובלה</h2>
+      <p style="font-size:.85rem;color:#6b7a90;margin-bottom:12px">הזמנה מוקדמת לפני האריזה. הכמויות משוערות ואינן מחייבות.</p>
+
+      <div class="row2">
+        <div class="field"><label>מגדל *</label>
+          <select id="pkGrower" onchange="pkFillGrower()"><option value="">—</option></select></div>
+        <div class="field"><label>תאריך איסוף *</label><input type="date" id="pkDate"></div>
+      </div>
+
+      <div class="row3">
+        <div class="field"><label>שעה / חלון זמן</label><input type="text" id="pkTime" placeholder="בוקר / 14:00"></div>
+        <div class="field"><label>מס' משטחים משוער</label><input type="number" id="pkPallets" inputmode="numeric" placeholder="2"></div>
+        <div class="field"><label>מס' קרטונים משוער</label><input type="number" id="pkCartons" inputmode="numeric" placeholder="40"></div>
+      </div>
+
+      <div class="row3">
+        <div class="field"><label>סוג קרטון</label><select id="pkCtype"><option value="">—</option></select></div>
+        <div class="field"><label>הובלה</label><select id="pkTransport"><option>Air</option><option>Sea</option></select></div>
+        <div class="field"><label>יעד</label>
+          <input type="text" id="pkDepotName" readonly style="background:#f5f8fc"></div>
+      </div>
+
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="pkAddBursa" onchange="pkDestToggle()" style="width:auto">
+          המשלוח מיועד גם לבורסה
+        </label>
+        <select id="pkDest" style="display:none;margin-top:6px"><option value="">— בחר בורסה —</option></select>
+      </div>
+
+      <h2 style="margin-top:18px">פרטי איסוף</h2>
+      <p style="font-size:.8rem;color:#6b7a90;margin-bottom:10px">נטען אוטומטית מכרטיס המגדל — ניתן לתקן להזמנה הזו בלבד</p>
+      <div class="row3">
+        <div class="field"><label>כתובת</label><input type="text" id="pkAddr" placeholder="רחוב ומספר"></div>
+        <div class="field"><label>עיר</label><input type="text" id="pkCity"></div>
+        <div class="field"><label>טלפון</label><input type="text" id="pkPhone" inputmode="tel"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>איש קשר באתר</label><input type="text" id="pkContact"></div>
+        <div class="field"><label>הערות לנהג</label><input type="text" id="pkNotes" placeholder="שער אחורי, לצלצל לפני"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+        <button class="pri" onclick="savePickup()">💾 שלח הזמנה</button>
+        <button onclick="pkPreviewWa()">👁️ תצוגת ההודעה</button>
+      </div>
+      <div id="pkStatus" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h2>ההזמנות שלי</h2>
+      <div id="pkList"><div class="hempty">בחר מגדל כדי לראות את ההזמנות שלו</div></div>
+    </div>
+  </div>
+
   <div id="viewHistory" style="display:none">
     <div class="card no-print" style="padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <b style="color:#0d47a1">טווח:</b>
@@ -291,6 +349,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
       <div class="field"><label>כתובת הדפו</label><input id="sDepotAddr" placeholder="פרחי השרון, תל-מונד 4065001, ישראל"></div>
       <div class="field"><label>חברת הובלה</label><input id="sTransport" placeholder="פרחי השרון"></div>
       <div class="field"><label>שם החברה בכותרת התעודה</label><input id="sCompany" placeholder="בורסת הפרחים"></div>
+      <div class="field"><label>וואטסאפ לקבלת הזמנות הובלה (איש הניהול)</label><input id="sPickPhone" inputmode="tel" placeholder="972501234567"><span style="font-size:.75rem;color:#6b7a90">קידומת מדינה בלי + ובלי 0 מוביל</span></div>
       <div class="field"><label>נוסח בקשת איסוף בוואטסאפ</label>
         <textarea id="sWa" style="width:100%;min-height:90px;padding:10px 11px;border:1.5px solid #d4dde8;border-radius:8px;font-family:inherit;font-size:.95rem"></textarea>
         <p class="hint">משתנים: {grower} {date} {delivery_no} {cartons} {transport}</p>
@@ -768,12 +827,141 @@ function printZebra(){
 
 // ============ לשוניות ============
 function showView(which){
-  const lbl=which==='labels';
-  document.getElementById('viewLabels').style.display=lbl?'block':'none';
-  document.getElementById('viewHistory').style.display=lbl?'none':'block';
-  document.getElementById('tabLabels').setAttribute('aria-pressed',lbl?'true':'false');
-  document.getElementById('tabHist').setAttribute('aria-pressed',lbl?'false':'true');
-  if(!lbl && !HIST.loaded) loadHistory();
+  document.getElementById('viewLabels').style.display =which==='labels'?'block':'none';
+  document.getElementById('viewHistory').style.display=which==='hist'  ?'block':'none';
+  document.getElementById('viewPickup').style.display =which==='pick'  ?'block':'none';
+  document.getElementById('tabLabels').setAttribute('aria-pressed',which==='labels'?'true':'false');
+  document.getElementById('tabHist').setAttribute('aria-pressed',which==='hist'?'true':'false');
+  document.getElementById('tabPick').setAttribute('aria-pressed',which==='pick'?'true':'false');
+  if(which==='hist' && !HIST.loaded) loadHistory();
+  if(which==='pick') pkInit();
+}
+// מילוי הרשימות בלשונית ההובלה מהנתונים שכבר נטענו
+let pkReady=false;
+function pkInit(){
+  if(pkReady) return;
+  if(!GROWERS.length){ return; }   // עדיין לא נטענו נתונים
+  const gs=document.getElementById('pkGrower');
+  gs.innerHTML='<option value="">—</option>'+GROWERS.map(function(g,i){
+    return '<option value="'+i+'">'+g.name+' ('+g.grower_num+')</option>'; }).join('');
+  const cs=document.getElementById('pkCtype');
+  cs.innerHTML='<option value="">—</option>'+CTYPES.map(function(c,i){
+    return '<option value="'+i+'">'+c.name+'</option>'; }).join('');
+  document.getElementById('pkDepotName').value=SETTINGS.depot_name||'';
+  const ds=document.getElementById('pkDest');
+  ds.innerHTML='<option value="">—</option>'+DESTS.map(function(d,i){
+    return '<option value="'+i+'">'+d.code+' '+d.name+'</option>'; }).join('');
+  pkReady=true;
+}
+
+// ============ הזמנת הובלה ============
+function pkFillGrower(){
+  const i=document.getElementById('pkGrower').value;
+  const box=document.getElementById('pkList');
+  if(i===''){ box.innerHTML='<div class="hempty">בחר מגדל כדי לראות את ההזמנות שלו</div>'; return; }
+  const g=GROWERS[i]||{};
+  document.getElementById('pkAddr').value=g.address||'';
+  document.getElementById('pkCity').value=g.city||'';
+  document.getElementById('pkPhone').value=g.phone||'';
+  document.getElementById('pkContact').value=g.contact||'';
+  document.getElementById('pkNotes').value=g.notes||'';
+  loadMyPickups(g.grower_num);
+}
+function pkDestToggle(){
+  document.getElementById('pkDest').style.display=
+    document.getElementById('pkAddBursa').checked?'block':'none';
+}
+// היעד תמיד הדפו. בורסה נוספת אליו אם סומנה.
+function pkDestText(){
+  let t=SETTINGS.depot_name||'';
+  if(document.getElementById('pkAddBursa').checked){
+    const i=v('pkDest');
+    if(i!==''){ const d=DESTS[i]; if(d) t+=' → '+d.code+' '+d.name; }
+  }
+  return t;
+}
+function pkWaText(){
+  const i=document.getElementById('pkGrower').value;
+  const g=GROWERS[i]||{};
+  const parts=[];
+  parts.push('🚚 בקשת איסוף');
+  parts.push('מגדל: '+(g.name||'')+' ('+(g.grower_num||'')+')');
+  parts.push('תאריך: '+(v('pkDate')||'—')+(v('pkTime')?' · '+v('pkTime'):''));
+  parts.push('כמות משוערת: '+(v('pkPallets')||0)+' משטחים · '+(v('pkCartons')||0)+' קרטונים');
+  if(v('pkCtype')!=='') parts.push('סוג קרטון: '+CTYPES[v('pkCtype')].name);
+  parts.push('הובלה: '+v('pkTransport')+' · יעד: '+(pkDestText()||'—'));
+  parts.push('כתובת: '+(v('pkAddr')||'')+(v('pkCity')?', '+v('pkCity'):''));
+  if(v('pkPhone')) parts.push('טלפון: '+v('pkPhone'));
+  if(v('pkContact')) parts.push('איש קשר: '+v('pkContact'));
+  if(v('pkNotes')) parts.push('הערות: '+v('pkNotes'));
+  return parts.join('\n');
+}
+function pkPreviewWa(){
+  document.getElementById('pkStatus').innerHTML=
+    '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:12px 14px;white-space:pre-line;font-size:.88rem">'
+    +pkWaText().replace(/</g,'&lt;')+'</div>';
+}
+async function savePickup(){
+  const st=document.getElementById('pkStatus');
+  const i=document.getElementById('pkGrower').value;
+  if(i===''){ alert('בחר מגדל'); return; }
+  if(!v('pkDate')){ alert('בחר תאריך איסוף'); return; }
+  const g=GROWERS[i];
+  const row={
+    grower_num:g.grower_num, grower_name:g.name,
+    pickup_date:v('pkDate'), pickup_time:v('pkTime')||null,
+    est_pallets:parseInt(v('pkPallets'))||0,
+    est_cartons:parseInt(v('pkCartons'))||0,
+    carton_type:v('pkCtype')!==''?CTYPES[v('pkCtype')].name:null,
+    address:v('pkAddr')||null, city:v('pkCity')||null,
+    phone:v('pkPhone')||null, contact:v('pkContact')||null,
+    transport:v('pkTransport'), destination:pkDestText()||null,
+    notes:v('pkNotes')||null, status:'חדש'
+  };
+  st.innerHTML='<span style="color:#00695c">⏳ שולח…</span>';
+  try{
+    const r=await db().from('pickups').insert(row);
+    if(r.error) throw r.error;
+    st.innerHTML='<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;color:#1b5e20;font-weight:700">✅ ההזמנה נשמרה</div>';
+    // פתיחת וואטסאפ למספר הקבוע שבהגדרות
+    const phone=String(SETTINGS.pickup_phone||'').replace(/\D/g,'');
+    if(phone){
+      const url='https://wa.me/'+phone+'?text='+encodeURIComponent(pkWaText());
+      window.open(url,'_blank');
+    }else{
+      st.innerHTML+='<div style="background:#fff3e0;border:1px solid #ffb74d;border-radius:8px;padding:10px 14px;margin-top:6px;font-size:.85rem;color:#e65100">⚠️ לא הוגדר מספר וואטסאפ לקבלת הזמנות — ראה ⚙️ הגדרות</div>';
+    }
+    loadMyPickups(g.grower_num);
+  }catch(e){
+    st.innerHTML='<div style="background:#ffebee;border:1px solid #ef9a9a;border-radius:8px;padding:10px 14px;color:#c62828">⚠️ '+(e.message||e)+'</div>';
+    console.error(e);
+  }
+}
+async function loadMyPickups(gnum){
+  const box=document.getElementById('pkList');
+  box.innerHTML='<div class="hempty">⏳ טוען…</div>';
+  try{
+    const r=await db().from('pickups').select('*')
+      .eq('grower_num',gnum).order('pickup_date',{ascending:false}).limit(20);
+    if(r.error) throw r.error;
+    const rows=r.data||[];
+    if(!rows.length){ box.innerHTML='<div class="hempty">אין הזמנות למגדל הזה</div>'; return; }
+    box.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:.85rem">'
+      +'<thead><tr><th style="text-align:right;padding:6px">תאריך</th><th style="text-align:right;padding:6px">שעה</th>'
+      +'<th style="text-align:right;padding:6px">משטחים</th><th style="text-align:right;padding:6px">קרטונים</th>'
+      +'<th style="text-align:right;padding:6px">יעד</th><th style="text-align:right;padding:6px">סטטוס</th></tr></thead><tbody>'
+      +rows.map(function(p){
+        return '<tr style="border-top:1px solid #eef2f7">'
+          +'<td style="padding:6px"><b>'+(p.pickup_date||'')+'</b></td>'
+          +'<td style="padding:6px">'+(p.pickup_time||'—')+'</td>'
+          +'<td style="padding:6px">'+(p.est_pallets||0)+'</td>'
+          +'<td style="padding:6px">'+(p.est_cartons||0)+'</td>'
+          +'<td style="padding:6px">'+(p.destination||'—')+'</td>'
+          +'<td style="padding:6px">'+(p.status||'')+'</td></tr>';
+      }).join('')+'</tbody></table>';
+  }catch(e){
+    box.innerHTML='<div class="hempty" style="color:#c62828">⚠️ '+(e.message||e)+'</div>';
+  }
 }
 
 // ============ הגדרות ============
@@ -782,6 +970,7 @@ const SDEF={
   depot_address:'פרחי השרון, תל-מונד 4065001, ישראל',
   transport_name:'פרחי השרון',
   company_name:'בורסת הפרחים',
+  pickup_phone:'',
   wa_template:'שלום {grower}, בקשת איסוף ל{date}.\nתעודה {delivery_no} — {cartons} קרטונים.\nההובלה: {transport}.\nנא לאשר.'
 };
 let SETTINGS=Object.assign({},SDEF);
@@ -799,6 +988,7 @@ function openSettings(){
   document.getElementById('sDepotAddr').value=SETTINGS.depot_address;
   document.getElementById('sTransport').value=SETTINGS.transport_name;
   document.getElementById('sCompany').value=SETTINGS.company_name;
+  document.getElementById('sPickPhone').value=SETTINGS.pickup_phone||'';
   document.getElementById('sWa').value=SETTINGS.wa_template;
   document.getElementById('setMsg').innerHTML='';
   document.getElementById('setOv').style.display='flex';
@@ -809,6 +999,7 @@ async function saveSettings(){
     {key:'depot_address',value:v('sDepotAddr').trim()},
     {key:'transport_name',value:v('sTransport').trim()},
     {key:'company_name',value:v('sCompany').trim()},
+    {key:'pickup_phone',value:v('sPickPhone').trim()},
     {key:'wa_template',value:document.getElementById('sWa').value}
   ];
   const msg=document.getElementById('setMsg');
