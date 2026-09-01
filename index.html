@@ -679,14 +679,14 @@ function buildZPL(){
     if(x.handler){
       z+='^XA\n^CI28\n^PW800\n^LL600\n^FO30,210^A0N,110,110^FB740,2,10,C,0^FD'+esc(x.handler)+'^FS\n^XZ\n';
     }
-    z+='^XA\n^CI28\n^PW800\n^LL600\n';
+    z+='^XA\n^CI28\n^CT&\n^PW800\n^LL600\n';
     z+='^FO20,20^GB760,560,3^FS\n';
     z+='^FO600,40^GB150,60,2^FS\n^FO600,50^A0N,45,45^FB150,1,0,C,0^FD'+esc(x.transport)+'^FS\n';
     z+='^FO230,45^A0N,28,28^FD Delivery '+esc(x.delivery)+'^FS\n';
     z+='^FO230,80^A0N,52,52^FD'+esc(x.dest.name+' '+x.dest.code)+'^FS\n';
     z+='^FO230,140^A0N,40,40^FD Gr: '+esc(x.g.grower_num)+'^FS\n';
     z+='^FO230,185^A0N,34,34^FD'+esc(x.g.name)+'^FS\n';
-    z+='^FO45,40^BXN,5,200^FH_^FD'+zplData(dm)+'^FS\n';
+    z+='^FO45,40^BXN,5,200^FD'+dm+'^FS\n';
     z+='^FO40,175^A0N,22,22^FD'+serial+'^FS\n';
     z+='^FO40,270^GB720,3,3^FS\n';
     z+='^FO45,285^A0N,24,24^FD Qty^FS\n^FO140,285^A0N,24,24^FD Code^FS\n^FO250,285^A0N,24,24^FD Product^FS\n';
