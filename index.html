@@ -664,6 +664,12 @@ async function saveDelivery(){
 
 // ===== ZPL =====
 function esc(s){return String(s||'').replace(/\^/g,' ').replace(/~/g,' ');}
+// מטען ה-DataMatrix חייב לשמור על ~ ו-| כפי שהם.
+// ב-ZPL התו ~ הוא תחילית פקודה והמדפסת חותכת את הנתונים בו,
+// לכן מקודדים אותו כ-hex עם ^FH (תו הבריחה: _)
+function zplData(s){
+  return String(s||'').replace(/_/g,'_5F').replace(/\^/g,'_5E').replace(/~/g,'_7E');
+}
 function buildZPL(){
   const x=getCtx();if(!x)return null;
   let z='';
@@ -680,7 +686,7 @@ function buildZPL(){
     z+='^FO230,80^A0N,52,52^FD'+esc(x.dest.name+' '+x.dest.code)+'^FS\n';
     z+='^FO230,140^A0N,40,40^FD Gr: '+esc(x.g.grower_num)+'^FS\n';
     z+='^FO230,185^A0N,34,34^FD'+esc(x.g.name)+'^FS\n';
-    z+='^FO45,40^BXN,5,200^FD'+dm+'^FS\n';
+    z+='^FO45,40^BXN,5,200^FH_^FD'+zplData(dm)+'^FS\n';
     z+='^FO40,175^A0N,22,22^FD'+serial+'^FS\n';
     z+='^FO40,270^GB720,3,3^FS\n';
     z+='^FO45,285^A0N,24,24^FD Qty^FS\n^FO140,285^A0N,24,24^FD Code^FS\n^FO250,285^A0N,24,24^FD Product^FS\n';
