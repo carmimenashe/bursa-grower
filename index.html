@@ -674,7 +674,7 @@ function zplData(s){
 // כך המדפסת רק מדפיסה נקודות ולא מפרשת את התווים שבמטען.
 function dmGraphic(text){
   const cv=document.createElement('canvas');
-  bwipjs.toCanvas(cv,{bcid:'datamatrix',text:text,scale:2,includetext:false,padding:0});
+  bwipjs.toCanvas(cv,{bcid:'datamatrix',text:text,scale:3,includetext:false,padding:0});
   const w=cv.width, h=cv.height;
   const px=cv.getContext('2d').getImageData(0,0,w,h).data;
   const bpr=Math.ceil(w/8);
