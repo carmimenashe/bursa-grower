@@ -60,15 +60,68 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
 .lfb{background:#000;color:#fff;font-size:2mm;padding:.8mm 1.5mm;flex:1;margin-left:2mm}
 .cno{font-size:3.4mm;font-weight:700;white-space:nowrap;text-align:center}
 @media print{
- body{background:#fff!important;padding:0!important}
- body *{visibility:hidden!important}
- #printZone,#printZone *{visibility:visible!important}
- #printZone{position:absolute!important;top:0!important;right:0!important;left:0!important;width:100%!important}
+ body{background:#fff!important;padding:0!important;margin:0!important}
  header,.card,.overlay,.no-print{display:none!important}
+
+ /* מצב מדבקות */
+ body:not(.print-note) *{visibility:hidden!important}
+ body:not(.print-note) #printZone,body:not(.print-note) #printZone *{visibility:visible!important}
+ body:not(.print-note) #printZone{position:absolute!important;top:0!important;right:0!important;left:0!important;width:100%!important}
  .labels{max-height:none!important;overflow:visible!important;background:none!important;padding:0!important}
  .pair{page-break-inside:avoid!important;margin-bottom:5mm!important}
- @page{margin:5mm}
+
+ /* מצב תעודת משלוח */
+ body.print-note .wrap{display:none!important}
+ body.print-note #note{
+   display:block!important;
+   width:190mm!important;max-width:190mm!important;
+   margin:8mm auto!important;padding:0!important;
+   color:#000;font-family:Arial,sans-serif;
+ }
+ @page{size:A4 portrait;margin:5mm}
 }
+/* ===== לשוניות ===== */
+.tabs{display:flex;gap:6px;margin-top:10px}
+.tabs button{font:inherit;font-weight:700;font-size:.88rem;padding:8px 18px;border:none;border-radius:9px;cursor:pointer;background:rgba(255,255,255,.18);color:#fff}
+.tabs button[aria-pressed="true"]{background:#fff;color:#0d47a1}
+
+/* ===== דשבורד היסטוריה ===== */
+.hgrid{display:grid;grid-template-columns:340px 1fr;gap:14px;align-items:start}
+@media(max-width:860px){.hgrid{grid-template-columns:1fr}}
+.hlist{background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden;max-height:70vh;overflow-y:auto}
+.hlist .hsearch{position:sticky;top:0;background:#fff;padding:12px;border-bottom:1px solid #eef2f7;z-index:2}
+.hrow{padding:11px 14px;border-bottom:1px solid #eef2f7;cursor:pointer}
+.hrow:hover{background:#f1f8ff}
+.hrow[aria-current="true"]{background:#e3f2fd;box-shadow:inset 3px 0 0 #1565c0}
+.hrow .hg{font-weight:700;color:#0d47a1}
+.hrow .hm{font-size:.78rem;color:#7a8aa0;margin-top:2px}
+.hrow .hn{float:left;font-weight:800;color:#1a2533}
+.hempty{padding:26px 16px;text-align:center;color:#9bb;font-size:.88rem}
+.stats{display:flex;flex-wrap:wrap;gap:0;border:1px solid #e0e8f0;border-radius:11px;overflow:hidden;margin-bottom:14px}
+.stat{padding:10px 16px;border-left:1px solid #e0e8f0;flex:1;min-width:110px}
+.stat:last-child{border-left:0}
+.stat b{display:block;font-size:1.3rem;font-weight:800;color:#0d47a1}
+.stat span{font-size:.76rem;color:#7a8aa0}
+.hact{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.btn-note{background:linear-gradient(135deg,#37474f,#263238)}
+.btn-wa{background:linear-gradient(135deg,#25a244,#128c3f)}
+
+/* ===== תעודת משלוח לנהג (הדפסה) ===== */
+#note{display:none}
+#note .n-top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #000;padding-bottom:12px}
+#note h1{font-size:30px;margin:0;font-weight:900}
+#note .n-co{text-align:left;font-size:15px;line-height:1.4}
+#note .n-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;border-top:0;width:100%}
+#note .n-cell{padding:9px 13px;border-left:1px solid #000;border-bottom:1px solid #000}
+#note .n-cell.full{grid-column:1 / -1;border-left:0}
+#note .n-cell span{font-size:12px;display:block;color:#444}
+#note .n-cell b{font-size:19px}
+#note table.nt{width:100%;border-collapse:collapse;border:1px solid #000;margin-top:18px}
+#note table.nt th,#note table.nt td{border:1px solid #000;font-size:15px;padding:7px 11px;text-align:right}
+#note table.nt th{background:#eee}
+#note .sign{margin-top:60px;display:flex;gap:36px}
+#note .sign div{flex:1;border-top:1px solid #000;padding-top:7px;font-size:13px}
+
 .overlay{display:none;position:fixed;inset:0;background:rgba(13,17,23,.6);z-index:200;align-items:center;justify-content:center;padding:16px}
 .modal{background:#fff;border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto}
 .mh{background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;padding:16px 20px;border-radius:16px 16px 0 0}
@@ -90,8 +143,14 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
       <button onclick="loadDB()" style="background:#fff;color:#0d47a1;border:none;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.82rem">🔄 טען נתונים</button>
       <span id="st" style="font-size:.82rem;opacity:.95">לחץ "טען נתונים"</span>
     </div>
+    <div class="tabs no-print">
+      <button id="tabLabels" aria-pressed="true" onclick="showView('labels')">🏷️ מדבקות</button>
+      <button id="tabHist" aria-pressed="false" onclick="showView('hist')">📋 היסטוריה</button>
+      <button onclick="openSettings()" style="margin-right:auto;background:rgba(255,255,255,.18)">⚙️ הגדרות</button>
+    </div>
   </header>
 
+  <div id="viewLabels">
   <div class="card no-print">
     <h2>① פרטי המשלוח</h2>
     <div class="row2">
@@ -183,9 +242,35 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
 
   <div id="printZone"><div id="out"></div></div>
   <div class="card no-print" id="pbtn" style="display:none;text-align:center">
-    <button class="btn btn-print" onclick="window.print()">🖨️ הדפס מדבקות</button>
+    <button class="btn btn-print" onclick="printLabels()">🖨️ הדפס מדבקות</button>
+  </div>
+  </div><!-- /viewLabels -->
+
+  <div id="viewHistory" style="display:none">
+    <div class="card no-print" style="padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <b style="color:#0d47a1">טווח:</b>
+      <div id="hrange" style="display:flex;gap:4px">
+        <button class="btn btn-sm" data-days="7"  style="background:#eef2f7;color:#46586e;box-shadow:none">7 ימים</button>
+        <button class="btn btn-sm" data-days="30" style="background:#eef2f7;color:#46586e;box-shadow:none">30 יום</button>
+        <button class="btn btn-sm" data-days="60" style="background:#1565c0;box-shadow:none">60 יום</button>
+        <button class="btn btn-sm" data-days="90" style="background:#eef2f7;color:#46586e;box-shadow:none">90 יום</button>
+      </div>
+      <button class="btn btn-sm" onclick="loadHistory()" style="background:#2e7d32;box-shadow:none;margin-right:auto">🔄 רענן</button>
+    </div>
+
+    <div class="hgrid">
+      <div class="hlist">
+        <div class="hsearch"><input id="hq" type="search" placeholder="חיפוש לפי מגדל או מספר תעודה" oninput="renderHist()"></div>
+        <div id="hrows"><div class="hempty">לחץ "רענן" לטעינת המשלוחים</div></div>
+      </div>
+      <div class="card" id="hdetail" style="margin:0">
+        <div class="hempty">בחר משלוח מהרשימה כדי לראות את הקרטונים, להדפיס תעודה לנהג או לשלוח בקשת איסוף.</div>
+      </div>
+    </div>
   </div>
 </div>
+
+<div id="note"></div>
 
 <div class="overlay" id="editOv">
   <div class="modal">
@@ -194,6 +279,27 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
     <div style="padding:0 18px 18px;display:flex;gap:10px">
       <button class="btn" style="flex:1" onclick="saveEdit()">💾 שמור</button>
       <button class="btn" style="flex:1;background:#90a4ae;box-shadow:none" onclick="closeEdit()">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="setOv">
+  <div class="modal">
+    <div class="mh"><h2>⚙️ הגדרות</h2><p>נשמר בטבלת settings ומשותף לכל העמדות</p></div>
+    <div style="padding:18px">
+      <div class="field"><label>שם הדפו (היעד בתעודה)</label><input id="sDepot" placeholder="א.ד.א. פרש"></div>
+      <div class="field"><label>כתובת הדפו</label><input id="sDepotAddr" placeholder="פרחי השרון, תל-מונד 4065001, ישראל"></div>
+      <div class="field"><label>חברת הובלה</label><input id="sTransport" placeholder="פרחי השרון"></div>
+      <div class="field"><label>שם החברה בכותרת התעודה</label><input id="sCompany" placeholder="בורסת הפרחים"></div>
+      <div class="field"><label>נוסח בקשת איסוף בוואטסאפ</label>
+        <textarea id="sWa" style="width:100%;min-height:90px;padding:10px 11px;border:1.5px solid #d4dde8;border-radius:8px;font-family:inherit;font-size:.95rem"></textarea>
+        <p class="hint">משתנים: {grower} {date} {delivery_no} {cartons} {transport}</p>
+      </div>
+      <div id="setMsg" style="font-size:.85rem"></div>
+    </div>
+    <div style="padding:0 18px 18px;display:flex;gap:10px">
+      <button class="btn" style="flex:1" onclick="saveSettings()">💾 שמור</button>
+      <button class="btn" style="flex:1;background:#90a4ae;box-shadow:none" onclick="document.getElementById('setOv').style.display='none'">סגור</button>
     </div>
   </div>
 </div>
@@ -625,11 +731,248 @@ function printZebra(){
   saveDelivery();
 }
 
+// ============ לשוניות ============
+function showView(which){
+  const lbl=which==='labels';
+  document.getElementById('viewLabels').style.display=lbl?'block':'none';
+  document.getElementById('viewHistory').style.display=lbl?'none':'block';
+  document.getElementById('tabLabels').setAttribute('aria-pressed',lbl?'true':'false');
+  document.getElementById('tabHist').setAttribute('aria-pressed',lbl?'false':'true');
+  if(!lbl && !HIST.loaded) loadHistory();
+}
+
+// ============ הגדרות ============
+const SDEF={
+  depot_name:'א.ד.א. פרש',
+  depot_address:'פרחי השרון, תל-מונד 4065001, ישראל',
+  transport_name:'פרחי השרון',
+  company_name:'בורסת הפרחים',
+  wa_template:'שלום {grower}, בקשת איסוף ל{date}.\nתעודה {delivery_no} — {cartons} קרטונים.\nההובלה: {transport}.\nנא לאשר.'
+};
+let SETTINGS=Object.assign({},SDEF);
+
+async function loadSettings(){
+  try{
+    const r=await db().from('settings').select('key,value');
+    if(r.error) return;
+    SETTINGS=Object.assign({},SDEF);
+    (r.data||[]).forEach(function(s){ if(s.value) SETTINGS[s.key]=s.value; });
+  }catch(e){ console.error(e); }
+}
+function openSettings(){
+  document.getElementById('sDepot').value=SETTINGS.depot_name;
+  document.getElementById('sDepotAddr').value=SETTINGS.depot_address;
+  document.getElementById('sTransport').value=SETTINGS.transport_name;
+  document.getElementById('sCompany').value=SETTINGS.company_name;
+  document.getElementById('sWa').value=SETTINGS.wa_template;
+  document.getElementById('setMsg').innerHTML='';
+  document.getElementById('setOv').style.display='flex';
+}
+async function saveSettings(){
+  const rows=[
+    {key:'depot_name',value:v('sDepot').trim()},
+    {key:'depot_address',value:v('sDepotAddr').trim()},
+    {key:'transport_name',value:v('sTransport').trim()},
+    {key:'company_name',value:v('sCompany').trim()},
+    {key:'wa_template',value:document.getElementById('sWa').value}
+  ];
+  const msg=document.getElementById('setMsg');
+  try{
+    const r=await db().from('settings').upsert(rows,{onConflict:'key'});
+    if(r.error) throw r.error;
+    rows.forEach(function(x){SETTINGS[x.key]=x.value;});
+    msg.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשמר</span>';
+    setTimeout(function(){document.getElementById('setOv').style.display='none';},900);
+  }catch(e){
+    msg.innerHTML='<span style="color:#c62828">⚠️ '+(e.message||e)+'</span>';
+  }
+}
+
+// ============ היסטוריה ============
+let HIST={loaded:false,days:60,rows:[],sel:null,growers:{}};
+
+document.getElementById('hrange').addEventListener('click',function(e){
+  const b=e.target.closest('button[data-days]'); if(!b) return;
+  document.querySelectorAll('#hrange button').forEach(function(x){
+    x.style.background='#eef2f7';x.style.color='#46586e';
+  });
+  b.style.background='#1565c0';b.style.color='#fff';
+  HIST.days=Number(b.dataset.days);
+  loadHistory();
+});
+
+function hDate(iso){return iso?new Date(iso).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'}):'';}
+function hName(d){return d.grower_name||HIST.growers[d.grower_num]||d.grower_num||'—';}
+
+async function loadHistory(){
+  const box=document.getElementById('hrows');
+  box.innerHTML='<div class="hempty">⏳ טוען…</div>';
+  try{
+    await loadSettings();
+    const since=new Date(Date.now()-HIST.days*864e5).toISOString();
+    let q=db().from('deliveries').select('*').gte('created_at',since).order('created_at',{ascending:false}).limit(1000);
+    if(urlG) q=q.eq('grower_num',urlG);
+    const r=await q;
+    if(r.error) throw r.error;
+    HIST.rows=r.data||[];
+    const g=await db().from('growers').select('grower_num,name,phone');
+    HIST.growers={};
+    (g.data||[]).forEach(function(x){HIST.growers[x.grower_num]={name:x.name,phone:x.phone};});
+    HIST.loaded=true;
+    renderHist();
+  }catch(e){
+    box.innerHTML='<div class="hempty">⚠️ '+(e.message||e)+'</div>';
+    console.error(e);
+  }
+}
+
+function renderHist(){
+  const q=(v('hq')||'').trim().toLowerCase();
+  const list=HIST.rows.filter(function(d){
+    if(!q) return true;
+    const nm=(HIST.growers[d.grower_num]||{}).name||d.grower_name||'';
+    return (nm+' '+(d.delivery_no||'')+' '+(d.grower_num||'')).toLowerCase().includes(q);
+  });
+  const box=document.getElementById('hrows');
+  if(!list.length){box.innerHTML='<div class="hempty">אין משלוחים בטווח שנבחר</div>';return;}
+  box.innerHTML=list.map(function(d){
+    const nm=(HIST.growers[d.grower_num]||{}).name||d.grower_name||d.grower_num;
+    return '<div class="hrow" data-id="'+d.id+'" onclick="selHist('+d.id+')" '+(HIST.sel===d.id?'aria-current="true"':'')+'>'
+      +'<span class="hn">'+(d.carton_count!=null?d.carton_count:'–')+'</span>'
+      +'<div class="hg">'+nm+'</div>'
+      +'<div class="hm">תעודה '+(d.delivery_no||'—')+' · '+hDate(d.created_at)
+      +(d.note_no?' · נהג #'+String(d.note_no).padStart(5,'0'):'')+'</div></div>';
+  }).join('');
+}
+
+async function selHist(id){
+  HIST.sel=id; renderHist();
+  const d=HIST.rows.find(function(x){return x.id===id;});
+  const det=document.getElementById('hdetail');
+  det.innerHTML='<div class="hempty">⏳ טוען קרטונים…</div>';
+  let cts=[];
+  try{
+    const r=await db().from('cartons').select('*').eq('delivery_no',String(d.delivery_no||'')).order('id');
+    cts=r.data||[];
+  }catch(e){console.error(e);}
+
+  const byV={};
+  cts.forEach(function(c){
+    const k=(c.variety_code||'')+'|'+(c.variety_desc||'');
+    byV[k]=byV[k]||{code:c.variety_code,desc:c.variety_desc,cartons:0,qty:0,bunches:0};
+    byV[k].cartons++;byV[k].qty+=parseInt(c.qty)||0;byV[k].bunches+=parseInt(c.bunches)||0;
+  });
+  const vars=Object.values(byV);
+  const gi=HIST.growers[d.grower_num]||{};
+
+  det.innerHTML='<h2 style="margin-bottom:4px">'+hName(d)+'</h2>'
+    +'<p class="hint" style="margin:0 0 12px">תעודה '+(d.delivery_no||'—')+' · '+hDate(d.created_at)
+    +(gi.phone?' · '+gi.phone:'')+(d.exchange_name?' · '+d.exchange_name:'')+'</p>'
+    +'<div class="hact">'
+    +'<button class="btn btn-note" onclick="printNote('+id+')">📄 תעודה לנהג</button>'
+    +'<button class="btn btn-wa" onclick="waPickup('+id+')" '+(gi.phone?'':'disabled style="opacity:.4"')+'>💬 בקשת איסוף</button>'
+    +'</div>'
+    +'<div class="stats">'
+    +'<div class="stat"><b>'+(d.carton_count!=null?d.carton_count:cts.length)+'</b><span>קרטונים</span></div>'
+    +'<div class="stat"><b>'+(d.pallet_count!=null?d.pallet_count:'–')+'</b><span>משטחים</span></div>'
+    +'<div class="stat"><b>'+vars.length+'</b><span>זנים</span></div>'
+    +'<div class="stat"><b>'+vars.reduce(function(s,x){return s+x.qty;},0)+'</b><span>ענפים</span></div>'
+    +'<div class="stat"><b>'+(d.transport||SETTINGS.transport_name)+'</b><span>הובלה</span></div>'
+    +'</div>'
+    +(vars.length?'<h2>ריכוז זנים</h2><table><thead><tr><th>קוד</th><th>זן</th><th>קרטונים</th><th>ענפים</th><th>אגדים</th></tr></thead><tbody>'
+      +vars.map(function(x){return '<tr><td>'+(x.code||'')+'</td><td>'+(x.desc||'')+'</td><td><b>'+x.cartons+'</b></td><td>'+x.qty+'</td><td>'+x.bunches+'</td></tr>';}).join('')
+      +'</tbody></table>':'<p class="hint">לא נמצאו קרטונים המקושרים לתעודה הזו.</p>')
+    +(cts.length?'<h2 style="margin-top:18px">קרטונים ('+cts.length+')</h2><table><thead><tr><th>מזהה</th><th>זן</th><th>אורך</th><th>דרגה</th><th>כמות</th><th>אגדים</th><th>משטח</th></tr></thead><tbody>'
+      +cts.map(function(c){return '<tr><td>'+(c.carton_id||'')+'</td><td>'+(c.variety_desc||c.variety_code||'')+'</td><td>'+(c.length||'')+'</td><td>'+(c.stage||'')+'</td><td>'+(c.qty!=null?c.qty:'')+'</td><td>'+(c.bunches!=null?c.bunches:'')+'</td><td>'+(c.pallet_num||'')+'</td></tr>';}).join('')
+      +'</tbody></table>':'');
+}
+
+// ============ תעודה לנהג ============
+async function ensureNoteNo(d){
+  if(d.note_no) return d.note_no;
+  const r=await db().from('deliveries').select('note_no').not('note_no','is',null).order('note_no',{ascending:false}).limit(1);
+  if(r.error) throw r.error;
+  const next=((r.data&&r.data.length)?Number(r.data[0].note_no):0)+1;
+  const u=await db().from('deliveries').update({note_no:next}).eq('id',d.id);
+  if(u.error) throw u.error;
+  d.note_no=next;
+  return next;
+}
+
+async function printNote(id){
+  const d=HIST.rows.find(function(x){return x.id===id;});
+  if(!d) return;
+  let noteNo=d.note_no||null;
+  try{ noteNo=await ensureNoteNo(d); }catch(e){ console.error(e); }
+
+  let cts=[];
+  try{
+    const r=await db().from('cartons').select('*').eq('delivery_no',String(d.delivery_no||''));
+    cts=r.data||[];
+  }catch(e){console.error(e);}
+  const byV={};
+  cts.forEach(function(c){
+    const k=(c.variety_code||'')+'|'+(c.variety_desc||'');
+    byV[k]=byV[k]||{code:c.variety_code,desc:c.variety_desc,cartons:0,qty:0};
+    byV[k].cartons++;byV[k].qty+=parseInt(c.qty)||0;
+  });
+  const vars=Object.values(byV);
+
+  document.getElementById('note').innerHTML=
+     '<div class="n-top"><h1>תעודת משלוח</h1>'
+    +'<div class="n-co"><b>'+SETTINGS.company_name+'</b><br>הובלה: '+(d.transport||SETTINGS.transport_name)+'</div></div>'
+    +'<div class="n-grid">'
+    +'<div class="n-cell"><span>מספר רץ</span><b>'+(noteNo?String(noteNo).padStart(5,'0'):'—')+'</b></div>'
+    +'<div class="n-cell"><span>תאריך</span><b>'+hDate(d.created_at)+'</b></div>'
+    +'<div class="n-cell"><span>מספר תעודה</span><b>'+(d.delivery_no||'—')+'</b></div>'
+    +'<div class="n-cell"><span>מספר מגדל</span><b>'+(d.grower_num||'—')+'</b></div>'
+    +'<div class="n-cell full"><span>נשלח מ־</span><b>'+hName(d)+'</b></div>'
+    +'<div class="n-cell full"><span>יעד</span><b>'+SETTINGS.depot_name+'</b>'
+    +'<div style="font-size:14px;margin-top:2px">'+SETTINGS.depot_address+'</div></div>'
+    +'<div class="n-cell"><span>סה״כ קרטונים</span><b>'+(d.carton_count!=null?d.carton_count:cts.length)+'</b></div>'
+    +'<div class="n-cell"><span>סה״כ משטחים</span><b>'+(d.pallet_count!=null?d.pallet_count:'—')+'</b></div>'
+    +'</div>'
+    +'<table class="nt"><thead><tr><th>קוד זן</th><th>תיאור</th><th>קרטונים</th><th>ענפים</th></tr></thead><tbody>'
+    +vars.map(function(x){return '<tr><td>'+(x.code||'')+'</td><td>'+(x.desc||'')+'</td><td>'+x.cartons+'</td><td>'+x.qty+'</td></tr>';}).join('')
+    +'<tr><th colspan="2">סה״כ</th><th>'+vars.reduce(function(s,x){return s+x.cartons;},0)+'</th><th>'+vars.reduce(function(s,x){return s+x.qty;},0)+'</th></tr>'
+    +'</tbody></table>'
+    +'<div class="sign"><div>שם הנהג</div><div>חתימת הנהג</div><div>תאריך ושעת איסוף</div></div>';
+
+  document.body.classList.add('print-note');
+  window.print();
+  setTimeout(function(){ document.body.classList.remove('print-note'); renderHist(); },400);
+}
+
+function printLabels(){
+  document.body.classList.remove('print-note');
+  window.print();
+}
+
+// ============ בקשת איסוף בוואטסאפ ============
+function waPhone(p){
+  let n=String(p||'').replace(/\D/g,'');
+  if(n.indexOf('972')===0) return n;
+  if(n.charAt(0)==='0') return '972'+n.slice(1);
+  return n;
+}
+function waPickup(id){
+  const d=HIST.rows.find(function(x){return x.id===id;});
+  const gi=HIST.growers[d.grower_num]||{};
+  if(!gi.phone){alert('למגדל אין טלפון בכרטיס');return;}
+  const t=SETTINGS.wa_template
+    .replace(/{grower}/g,hName(d))
+    .replace(/{date}/g,hDate(d.created_at))
+    .replace(/{delivery_no}/g,d.delivery_no||'—')
+    .replace(/{cartons}/g,d.carton_count!=null?d.carton_count:'')
+    .replace(/{transport}/g,d.transport||SETTINGS.transport_name);
+  window.open('https://wa.me/'+waPhone(gi.phone)+'?text='+encodeURIComponent(t),'_blank');
+}
+
 document.getElementById('delivery').value=(1300000+Math.floor(Math.random()*99999));
 document.getElementById('ddate').value=new Date().toISOString().slice(0,10);
 serialBase=parseInt(String(Date.now()).slice(-8));
 fill('stage',STAGES,function(s){return s;});
-window.addEventListener('load',function(){ loadDB(); });
+window.addEventListener('load',function(){ loadDB(); loadSettings(); });
 </script>
 </body>
 </html>
