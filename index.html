@@ -670,6 +670,34 @@ function esc(s){return String(s||'').replace(/\^/g,' ').replace(/~/g,' ');}
 function zplData(s){
   return String(s||'').replace(/_/g,'_5F').replace(/\^/g,'_5E').replace(/~/g,'_7E');
 }
+// ממיר את ה-DataMatrix לתמונה (^GFA) במקום לפקודת ברקוד של המדפסת.
+// כך המדפסת רק מדפיסה נקודות ולא מפרשת את התווים שבמטען.
+function dmGraphic(text){
+  const cv=document.createElement('canvas');
+  bwipjs.toCanvas(cv,{bcid:'datamatrix',text:text,scale:5,includetext:false,padding:0});
+  const w=cv.width, h=cv.height;
+  const px=cv.getContext('2d').getImageData(0,0,w,h).data;
+  const bpr=Math.ceil(w/8);
+  let hex='';
+  for(let y=0;y<h;y++){
+    for(let b=0;b<bpr;b++){
+      let byte=0;
+      for(let bit=0;bit<8;bit++){
+        const x=b*8+bit;
+        let dark=0;
+        if(x<w){
+          const i=(y*w+x)*4;
+          const lum=px[i]*0.299+px[i+1]*0.587+px[i+2]*0.114;
+          dark=(px[i+3]>128 && lum<128)?1:0;
+        }
+        byte=(byte<<1)|dark;
+      }
+      hex+=(byte<16?'0':'')+byte.toString(16).toUpperCase();
+    }
+  }
+  const total=bpr*h;
+  return '^GFA,'+total+','+total+','+bpr+','+hex;
+}
 function buildZPL(){
   const x=getCtx();if(!x)return null;
   let z='';
@@ -679,14 +707,15 @@ function buildZPL(){
     if(x.handler){
       z+='^XA\n^CI28\n^PW800\n^LL600\n^FO30,210^A0N,110,110^FB740,2,10,C,0^FD'+esc(x.handler)+'^FS\n^XZ\n';
     }
-    z+='^XA\n^CI28\n^CT&\n^PW800\n^LL600\n';
+    z+='^XA\n^CI28\n^PW800\n^LL600\n';
     z+='^FO20,20^GB760,560,3^FS\n';
     z+='^FO600,40^GB150,60,2^FS\n^FO600,50^A0N,45,45^FB150,1,0,C,0^FD'+esc(x.transport)+'^FS\n';
     z+='^FO230,45^A0N,28,28^FD Delivery '+esc(x.delivery)+'^FS\n';
     z+='^FO230,80^A0N,52,52^FD'+esc(x.dest.name+' '+x.dest.code)+'^FS\n';
     z+='^FO230,140^A0N,40,40^FD Gr: '+esc(x.g.grower_num)+'^FS\n';
     z+='^FO230,185^A0N,34,34^FD'+esc(x.g.name)+'^FS\n';
-    z+='^FO45,40^BXN,5,200^FD'+dm+'^FS\n';
+    try{ z+='^FO45,40'+dmGraphic(dm)+'^FS\n'; }
+    catch(err){ console.error('DM graphic failed',err); z+='^FO45,40^BXN,5,200^FD'+dm+'^FS\n'; }
     z+='^FO40,175^A0N,22,22^FD'+serial+'^FS\n';
     z+='^FO40,270^GB720,3,3^FS\n';
     z+='^FO45,285^A0N,24,24^FD Qty^FS\n^FO140,285^A0N,24,24^FD Code^FS\n^FO250,285^A0N,24,24^FD Product^FS\n';
