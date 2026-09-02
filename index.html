@@ -134,7 +134,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה C4</span></h1>
+        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה C6</span></h1>
         <p>בית האריזה · מדבקה 100×75 מ"מ (Zebra ZD220)</p>
       </div>
       <a href="https://transcendent-dragon-55ce11.netlify.app" class="no-print" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:700;white-space:nowrap">🏠 דף הבית</a>
@@ -708,7 +708,7 @@ function zplData(s){
 // כך המדפסת רק מדפיסה נקודות ולא מפרשת את התווים שבמטען.
 function dmGraphic(text){
   const cv=document.createElement('canvas');
-  bwipjs.toCanvas(cv,{bcid:'datamatrix',text:text,scale:9,includetext:false,padding:0});
+  bwipjs.toCanvas(cv,{bcid:'datamatrix',text:text,scale:6,includetext:false,padding:0});
   const w=cv.width, h=cv.height;
   const px=cv.getContext('2d').getImageData(0,0,w,h).data;
   const bpr=Math.ceil(w/8);
@@ -750,7 +750,7 @@ function buildZPL(){
     z+='^FO230,185^A0N,34,34^FD'+esc(x.g.name)+'^FS\n';
     try{ z+='^FO45,40'+dmGraphic(dm)+'^FS\n'; }
     catch(err){ console.error('DM graphic failed',err); z+='^FO45,40^BXN,5,200^FD'+dm+'^FS\n'; }
-    z+='^FO40,175^A0N,22,22^FD'+serial+'^FS\n';
+    z+='^FO45,196^A0N,30,30^FD'+serial+'^FS\n';
     z+='^FO40,270^GB720,3,3^FS\n';
     z+='^FO45,285^A0N,24,24^FD Qty^FS\n^FO140,285^A0N,24,24^FD Code^FS\n^FO250,285^A0N,24,24^FD Product^FS\n';
     z+='^FO570,285^A0N,24,24^FD Len^FS\n^FO650,285^A0N,24,24^FD Wgt^FS\n^FO725,285^A0N,24,24^FD Oth^FS\n';
