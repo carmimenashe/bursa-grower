@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>עמדת דפו</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:#eef2f7;color:#1a2533;padding:14px;line-height:1.5}
+  .wrap{max-width:1100px;margin:0 auto}
+  header{background:linear-gradient(135deg,#00695c,#004d40);color:#fff;padding:16px 20px;border-radius:14px;margin-bottom:16px;box-shadow:0 4px 14px rgba(0,77,64,.25)}
+  header h1{font-size:1.25rem}
+  header p{font-size:.85rem;opacity:.9;margin-top:3px}
+  .steps{display:flex;gap:8px;margin-bottom:16px}
+  .step-tab{flex:1;background:#fff;border:2px solid #e0e8f0;border-radius:11px;padding:11px 8px;text-align:center;cursor:pointer;font-weight:700;font-size:.9rem;color:#7a8aa0;transition:all .15s}
+  .step-tab.active{border-color:#00695c;background:#e0f2f1;color:#004d40}
+  .step-tab .sn{display:inline-flex;width:22px;height:22px;background:#cfd8dc;color:#fff;border-radius:50%;align-items:center;justify-content:center;font-size:.8rem;margin-left:6px}
+  .step-tab.active .sn{background:#00695c}
+  .card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:14px}
+  .card h2{font-size:1rem;margin-bottom:12px;padding-bottom:7px;border-bottom:2px solid #eef2f7;color:#004d40}
+  label{display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;color:#46586e}
+  .field{margin-bottom:11px}
+  select,input{width:100%;padding:10px 11px;border:1.5px solid #d4dde8;border-radius:8px;font-size:.98rem;font-family:inherit;background:#fff}
+  select:focus,input:focus{outline:none;border-color:#00695c}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:680px){.row3,.row2{grid-template-columns:1fr}}
+  .btn{padding:12px 18px;background:linear-gradient(135deg,#00695c,#004d40);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(0,77,64,.3)}
+  .btn:active{transform:translateY(1px)}
+  .btn-add{width:100%;margin-top:4px}
+  .btn-blue{background:linear-gradient(135deg,#1565c0,#0d47a1);box-shadow:0 3px 10px rgba(13,71,161,.3)}
+  .btn-big{font-size:1.15rem;padding:16px 24px}
+  .btn-sm{padding:6px 10px;font-size:.85rem;border-radius:7px}
+  .btn-del{background:#e53935;box-shadow:none}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.85rem}
+  th{background:#f5f8fc;padding:7px 5px;text-align:right;font-size:.75rem;color:#46586e;border-bottom:2px solid #e0e8f0}
+  td{padding:6px 5px;border-bottom:1px solid #eef2f7}
+  .empty-row td{text-align:center;color:#9bb;padding:16px}
+  .calc-box{background:#fff8e1;border:1.5px dashed #ffca28;border-radius:9px;padding:10px 14px;margin-top:8px;font-size:.9rem;color:#795548}
+  .calc-box b{color:#3e2723;font-size:1.1rem}
+  /* אזור סריקה */
+  .scan-zone{background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border:3px dashed #43a047;border-radius:14px;padding:20px;margin-bottom:14px;text-align:center}
+  .scan-zone.ready{border-color:#2e7d32;background:linear-gradient(135deg,#e8f5e9,#a5d6a7)}
+  .scan-zone h3{font-size:1.1rem;color:#1b5e20;margin-bottom:10px}
+  #scanInput{font-size:1.3rem;padding:16px;text-align:center;border:3px solid #43a047;border-radius:11px;font-weight:700;letter-spacing:1px;background:#fff}
+  #scanInput:focus{border-color:#1b5e20;box-shadow:0 0 0 4px rgba(67,160,71,.2)}
+  .scan-hint{font-size:.85rem;color:#2e7d32;margin-top:8px;font-weight:600}
+  .last-scan{background:#fff;border-radius:10px;padding:12px 16px;margin-top:12px;text-align:right;font-size:.9rem;display:none}
+  .last-scan.show{display:block;animation:pop .3s}
+  @keyframes pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+  .last-scan b{color:#1b5e20}
+  .scan-err{background:#ffebee;border:1px solid #ef9a9a;color:#c62828}
+  /* משטחים */
+  .active-pallet{background:#e0f2f1;border:2.5px solid #00695c;border-radius:12px;padding:14px 18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+  .active-pallet .ap-info{font-size:1.05rem;font-weight:700;color:#004d40}
+  .active-pallet .ap-count{background:#00695c;color:#fff;padding:4px 14px;border-radius:20px;font-size:.9rem}
+  .pallet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px}
+  .pallet{border:2px solid #b0bec5;border-radius:11px;overflow:hidden}
+  .pallet.active{border-color:#00695c;box-shadow:0 2px 10px rgba(0,77,64,.18)}
+  .pallet-head{background:#eceff1;padding:8px 12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;font-size:.9rem}
+  .pallet.active .pallet-head{background:#00695c;color:#fff}
+  .pallet-body{padding:8px 12px;min-height:50px;font-size:.78rem;max-height:180px;overflow-y:auto}
+  .pc-item{background:#f5f8fc;border-radius:6px;padding:5px 8px;margin-bottom:5px;display:flex;justify-content:space-between;gap:6px}
+  .totals-bar{display:flex;gap:18px;flex-wrap:wrap;background:#e0f2f1;border-radius:9px;padding:10px 16px;margin-top:10px;font-size:.9rem}
+  .totals-bar b{color:#004d40;font-size:1.05rem}
+  .seg{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:700;background:#e3f2fd;color:#1565c0}
+  .hint{font-size:.78rem;color:#7a8aa0;margin-top:8px}
+  .pane{display:none}
+  .pane.active{display:block}
+  .export-preview{background:#1a2533;color:#9be7d4;border-radius:11px;padding:14px;font-family:monospace;font-size:.75rem;overflow-x:auto;margin-top:12px;white-space:pre;max-height:400px;overflow-y:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div>
+        <h1>🏭 עמדת דפו — קבלה · משטוח · ייצוא <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה S3</span></h1>
+        <p>נקודת האיסוף המרכזית · נתונים משותפים בין מחשב לסלולר</p>
+      </div>
+      <a href="https://transcendent-dragon-55ce11.netlify.app" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:700;white-space:nowrap">🏠 דף הבית</a>
+    </div>
+  </header>
+
+  <div class="steps">
+    <div class="step-tab active" id="tab-0" onclick="goStep(0)"><span class="sn">1</span>קבלה</div>
+    <div class="step-tab" id="tab-1" onclick="goStep(1)"><span class="sn">2</span>משטוח</div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="sn">3</span>דו"ח וייצוא</div>
+  </div>
+
+  <!-- שלב 1 - קבלה -->
+  <div class="pane active" id="pane-0">
+    <div class="card">
+      <h2>קבלת תוצרת — ספירה ושקילה (ללא סריקה)</h2>
+      <div class="row3">
+        <div class="field"><label>מגדל</label>
+          <div style="display:flex;gap:6px">
+            <select id="recGrower" style="flex:1"><option value="">⏳ טוען…</option></select>
+            <button class="btn btn-sm" onclick="loadGrowers()" style="white-space:nowrap">🔄 טען</button>
+          </div>
+        </div>
+        <div class="field"><label>מספר קרטונים</label><input type="number" id="recCount" inputmode="numeric" placeholder="24" oninput="recCalc()"></div>
+        <div class="field"><label>משקל כולל (ק"ג)</label><input type="number" id="recWeight" inputmode="decimal" placeholder="180" oninput="recCalc()"></div>
+      </div>
+      <div class="calc-box" id="recCalcBox">משקל ממוצע לקרטון יחושב אוטומטית: משקל כולל ÷ מספר קרטונים</div>
+      <button class="btn btn-add" onclick="addReception()" style="margin-top:10px">➕ הוסף קבלה</button>
+      <p class="hint">בצע קבלה לכל מגדל. אחרי שכל הקבלות הושלמו — עבור לשלב המשטוח.</p>
+    </div>
+    <div class="card">
+      <h2>קבלות שנקלטו</h2>
+      <table><thead><tr><th>מגדל</th><th>קרטונים</th><th>משקל כולל</th><th>ממוצע/קרטון</th><th></th></tr></thead>
+        <tbody id="recBody"><tr class="empty-row"><td colspan="5">אין קבלות עדיין</td></tr></tbody>
+      </table>
+      <div class="totals-bar">
+        <span>מגדלים: <b id="tGrowers">0</b></span>
+        <span>סה"כ קרטונים: <b id="tRecCartons">0</b></span>
+        <span>משקל כולל: <b id="tRecWeight">0</b> ק"ג</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- שלב 2 - משטוח -->
+  <div class="pane" id="pane-1">
+    <div class="card" style="border-right:5px solid #1565c0">
+      <h2>✈️ פרטי משלוח (לפני המשטוח)</h2>
+      <p class="hint" style="margin-bottom:10px">הזן פעם אחת — כל הקרטונים שייסרקו יקבלו את הפרטים האלה</p>
+      <div class="row3">
+        <div class="field"><label>תאריך טיסה / הפלגה</label><input type="date" id="flightDate" onchange="saveFlight()"></div>
+        <div class="field"><label>מספר טיסה (כולל חברת תעופה)</label><input type="text" id="flightNo" placeholder="LY 5102" onchange="saveFlight()"></div>
+        <div class="field"><label>שטר מטען (AWB)</label><input type="text" id="awb" placeholder="114-64198514" onchange="saveFlight()"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <div id="syncBar" style="font-size:.85rem;font-weight:700;color:#00695c">⏳ מתחבר למאגר…</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="syncFromDb()" style="background:#546e7a;box-shadow:none">🔄 רענן</button>
+          <button class="btn btn-sm btn-del" onclick="clearDay()">🗑️ נקה יום</button>
+        </div>
+      </div>
+
+      <div class="active-pallet" id="activePalletBar">
+        <span class="ap-info">אין משטח פעיל — צור משטח כדי להתחיל</span>
+        <button class="btn" onclick="newPallet()">➕ משטח חדש</button>
+      </div>
+
+      <div class="scan-zone" id="scanZone">
+        <h3>📷 סרוק קרטון</h3>
+        <input type="text" id="scanInput" placeholder="הסמן כאן — סרוק את הברקוד" autocomplete="off">
+        <div class="scan-hint">הסורק מקליד אוטומטית ולוחץ Enter · הקרטון ייכנס למשטח הפעיל</div>
+        <button class="btn" onclick="toggleCamera()" id="camBtn" style="margin-top:10px;background:#546e7a;box-shadow:none;font-size:.9rem;padding:9px 16px">📱 גיבוי: סרוק במצלמה</button>
+        <div id="camZone" style="display:none;margin-top:12px">
+          <div id="reader" style="max-width:380px;margin:0 auto;border-radius:10px;overflow:hidden"></div>
+          <p class="hint" style="color:#2e7d32;font-weight:600">כוון את המצלמה על ה-DataMatrix</p>
+        </div>
+        <div class="last-scan" id="lastScan"></div>
+      </div>
+
+      <div style="background:#fff8e1;border:2px dashed #ffb300;border-radius:12px;padding:16px;margin-top:12px">
+        <h3 style="font-size:1rem;color:#e65100;margin-bottom:8px">⌨️ הברקוד לא נקרא? הקלד ידנית</h3>
+        <p style="font-size:.83rem;color:#8d6e63;margin-bottom:10px">הקלד את 8 הספרות שמודפסות מתחת לברקוד. הנתונים יישלפו מהמאגר.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="manualId" inputmode="numeric" maxlength="8" placeholder="27986920"
+                 style="flex:1;min-width:160px;font-size:1.2rem;text-align:center;font-weight:700;letter-spacing:2px;border:2px solid #ffb300"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();manualAdd();}">
+          <button class="btn" onclick="manualAdd()" style="background:linear-gradient(135deg,#f57c00,#e65100)">➕ הוסף</button>
+        </div>
+        <div id="manualMsg" style="margin-top:8px;font-size:.88rem"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>משטחים</h2>
+      <div class="pallet-grid" id="palletGrid"></div>
+      <div class="totals-bar">
+        <span>משטחים: <b id="tPallets">0</b></span>
+        <span>קרטונים שנסרקו: <b id="tScanned">0</b></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- שלב 3 - דוח וייצוא -->
+  <div class="pane" id="pane-2">
+    <div class="card">
+      <h2>דו"ח משטחים</h2>
+      <table><thead><tr><th>משטח</th><th>מגדל</th><th>מק"ט</th><th>אורך</th><th>משקל</th><th>כמות</th><th>דרגה</th><th>פורק</th><th>הובלה</th><th>קרטון</th></tr></thead>
+        <tbody id="reportBody"><tr class="empty-row"><td colspan="10">אין נתונים — סרוק קרטונים בשלב המשטוח</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>ייצוא לפריורטי</h2>
+      <p style="font-size:.9rem;color:#46586e;margin-bottom:10px">קובץ Tab-delimited לטבלאות HILA_BURSDELIVERY ו-HILA_BURSTRANS</p>
+      <button class="btn btn-blue" onclick="buildExport()">📤 הכן ייצוא</button>
+      <button class="btn" onclick="downloadExport()" style="margin-right:8px;background:#546e7a">💾 הורד קובץ</button>
+      <div class="export-preview" id="exportPreview" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://oilbwsvwzxhsobmtmhlw.supabase.co';
+const SUPABASE_KEY='sb_publishable_-_Akw2cZOsagxTrNVFpidA_xCIxYgCk';
+
+let dbGrowers=[];
+let receptions=[];
+let pallets=[];        // {num, cartons:[...]}  — נבנה מהמאגר
+let activePalletNum=null;
+let scannedIds={};
+let palletSeq=52040;
+let syncTimer=null;
+const DEVICE=(navigator.userAgent.match(/Mobile|Android|iPhone/)?'📱 סלולר':'💻 מחשב');
+
+// לקוח Supabase יחיד לכל הדף
+let _db=null;
+function db(){
+  if(!_db){
+    if(typeof supabase==='undefined') throw new Error('ספריית Supabase לא נטענה');
+    _db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  }
+  return _db;
+}
+
+function v(id){ return document.getElementById(id).value; }
+
+// ===== שלב 1 - קבלה =====
+function recCalc(){
+  const cnt=parseInt(v('recCount'))||0, wt=parseFloat(v('recWeight'))||0;
+  const box=document.getElementById('recCalcBox');
+  if(cnt&&wt){ box.innerHTML='משקל ממוצע לקרטון: <b>'+(wt/cnt).toFixed(2)+' ק"ג</b> ('+wt+' ÷ '+cnt+')'; }
+  else { box.innerHTML='משקל ממוצע לקרטון יחושב אוטומטית: משקל כולל ÷ מספר קרטונים'; }
+}
+function addReception(){
+  const sel=document.getElementById('recGrower');
+  const gnum=sel.value; const cnt=parseInt(v('recCount'))||0; const wt=parseFloat(v('recWeight'))||0;
+  if(!gnum){ alert('בחר מגדל'); return; }
+  const gname=sel.options[sel.selectedIndex].textContent;
+  if(!cnt){ alert('הזן מספר קרטונים'); return; }
+  receptions.push({ gnum:gnum, gname:gname, count:cnt, weight:wt, avg:wt&&cnt?(wt/cnt):0 });
+  sel.value=''; document.getElementById('recCount').value=''; document.getElementById('recWeight').value=''; recCalc();
+  renderReceptions();
+}
+function delReception(i){ receptions.splice(i,1); renderReceptions(); }
+function renderReceptions(){
+  const b=document.getElementById('recBody');
+  if(!receptions.length){ b.innerHTML='<tr class="empty-row"><td colspan="5">אין קבלות עדיין</td></tr>'; }
+  else { b.innerHTML=receptions.map(function(r,i){ return '<tr><td><b>'+(r.gname||r.gnum)+'</b></td><td>'+r.count+'</td><td>'+(r.weight||'—')+'</td><td>'+(r.avg?r.avg.toFixed(2)+' ק"ג':'—')+'</td><td><button class="btn btn-sm btn-del" onclick="delReception('+i+')">✕</button></td></tr>'; }).join(''); }
+  document.getElementById('tGrowers').textContent=new Set(receptions.map(function(r){return r.gnum;})).size;
+  document.getElementById('tRecCartons').textContent=receptions.reduce(function(s,r){return s+r.count;},0);
+  document.getElementById('tRecWeight').textContent=receptions.reduce(function(s,r){return s+(r.weight||0);},0);
+}
+
+// ===== טעינת מגדלים מהמאגר =====
+async function loadGrowers(){
+  const sel=document.getElementById('recGrower');
+  try{
+    const {data,error}=await db().from('growers').select('*').order('name');
+    if(error){ sel.innerHTML='<option value="">⚠️ '+error.message+'</option>'; console.error(error); return; }
+    dbGrowers=data||[];
+    if(!dbGrowers.length){ sel.innerHTML='<option value="">אין מגדלים במאגר</option>'; return; }
+    sel.innerHTML='<option value="">— בחר מגדל —</option>'+dbGrowers.map(function(g){
+      return '<option value="'+g.grower_num+'">'+g.name+' ('+g.grower_num+')</option>'; }).join('');
+  }catch(e){
+    console.error(e);
+    sel.innerHTML='<option value="">⚠️ '+e.message+'</option>';
+  }
+}
+
+// ===== שלב 2 - משטוח וסריקה (נתונים משותפים במאגר) =====
+function syncStatus(txt,cls){
+  const el=document.getElementById('syncBar');
+  if(el) el.innerHTML='<span class="'+(cls||'')+'">'+txt+'</span>';
+}
+
+// טעינת המצב המשותף מהמאגר ובניית המשטחים מחדש
+async function syncFromDb(silent){
+  try{
+    const s=await db().from('depot_session').select('*').eq('id','active').single();
+    if(s.error) throw s.error;
+    const sess=s.data||{};
+    palletSeq=sess.pallet_seq||52040;
+    activePalletNum=sess.active_pallet||null;
+    // פרטי טיסה — לא דורסים בזמן שהמשתמש מקליד
+    ['flightDate','flightNo','awb'].forEach(function(id,i){
+      const el=document.getElementById(id);
+      if(el && document.activeElement!==el){
+        el.value=[sess.flight_date,sess.flight_no,sess.awb][i]||'';
+      }
+    });
+
+    const r=await db().from('depot_scans').select('*').order('id');
+    if(r.error) throw r.error;
+    const rows=r.data||[];
+    const map={};
+    pallets=[];
+    scannedIds={};
+    rows.forEach(function(row){
+      if(!map[row.pallet_num]){ map[row.pallet_num]={num:row.pallet_num,cartons:[]}; pallets.push(map[row.pallet_num]); }
+      const items=row.items||[];
+      const first=items[0]||{code:'',len:'',qty:'',stage:'',bunches:'',packs:'',weight:''};
+      map[row.pallet_num].cartons.push({
+        sup:row.sup||'', grower:row.grower||'', cartonId:row.carton_id, bursa:row.bursa||'',
+        porek:row.porek||'', shiptype:row.shiptype||'', ctype:row.ctype||'',
+        items:items, code:first.code, len:first.len, qty:first.qty, stage:first.stage,
+        bunches:first.bunches, packs:first.packs, weight:first.weight,
+        mix:items.length>1, raw:row.raw||'', device:row.device||''
+      });
+      scannedIds[row.carton_id]=row.pallet_num;
+    });
+    // משטח פעיל שעדיין ריק — שיופיע ברשימה
+    if(activePalletNum && !map[activePalletNum]){ pallets.push({num:activePalletNum,cartons:[]}); }
+    pallets.sort(function(a,b){ return Number(a.num)-Number(b.num); });
+    renderActivePallet(); renderPallets();
+    if(document.getElementById('pane-2').classList.contains('active')) renderReport();
+    if(!silent) syncStatus('✅ מסונכרן · '+DEVICE,'ok');
+  }catch(e){
+    console.error(e);
+    syncStatus('⚠️ אין סנכרון: '+(e.message||e),'err');
+  }
+}
+
+function activePallet(){
+  for(let i=0;i<pallets.length;i++) if(pallets[i].num===activePalletNum) return pallets[i];
+  return null;
+}
+
+async function saveSession(patch){
+  patch.updated_at=new Date().toISOString();
+  const r=await db().from('depot_session').update(patch).eq('id','active');
+  if(r.error) throw r.error;
+}
+
+async function newPallet(){
+  try{
+    const num=String(palletSeq);
+    await saveSession({ active_pallet:num, pallet_seq:palletSeq+1 });
+    await syncFromDb();
+    focusScan();
+  }catch(e){ alert('לא ניתן לפתוח משטח: '+(e.message||e)); }
+}
+async function setActive(num){
+  try{ await saveSession({active_pallet:String(num)}); await syncFromDb(); focusScan(); }
+  catch(e){ alert('שגיאה: '+(e.message||e)); }
+}
+async function saveFlight(){
+  try{ await saveSession({ flight_date:v('flightDate'), flight_no:v('flightNo'), awb:v('awb') }); }
+  catch(e){ console.error(e); }
+}
+async function clearDay(){
+  if(!confirm('למחוק את כל הקרטונים והמשטחים של היום?\nהפעולה לא ניתנת לביטול.')) return;
+  try{
+    await db().from('depot_scans').delete().neq('carton_id','');
+    await saveSession({active_pallet:null});
+    await syncFromDb();
+    syncStatus('🗑️ נוקה','ok');
+  }catch(e){ alert('שגיאה במחיקה: '+(e.message||e)); }
+}
+function renderActivePallet(){
+  const bar=document.getElementById('activePalletBar');
+  const p=activePallet();
+  if(!p){
+    bar.innerHTML='<span class="ap-info">אין משטח פעיל — צור משטח כדי להתחיל</span><button class="btn" onclick="newPallet()">➕ משטח חדש</button>';
+    return;
+  }
+  bar.innerHTML='<span class="ap-info">📦 משטח פעיל: '+p.num+' <span class="ap-count">'+p.cartons.length+' קרטונים</span></span>'
+    +'<button class="btn" onclick="newPallet()">➕ סגור ופתח משטח חדש</button>';
+}
+
+// הברקוד מכיל את מספר הקרטון בלבד. הנתונים נשלפים מהמאגר.
+function parseBarcode(raw){
+  const id=String(raw||'').replace(/\D/g,'');
+  return id||null;
+}
+
+async function handleScan(raw){
+  const id=parseBarcode(raw);
+  if(!id){ showScanMsg('⚠️ ברקוד לא תקין', true); return; }
+  await addCarton(id, 'סריקה');
+}
+// ===== הוספת קרטון: שליפה מהמאגר לפי המספר =====
+// משמש גם לסריקה וגם להקלדה ידנית — אותו מסלול בדיוק
+async function addCarton(id, how){
+  const manual = how!=='סריקה';
+  const msg = manual ? document.getElementById('manualMsg') : null;
+  function say(html, isErr){
+    if(manual){ msg.innerHTML='<span style="color:'+(isErr?'#c62828':'#1b5e20')+'">'+html+'</span>'; }
+    else { showScanMsg(html, isErr); }
+  }
+  if(!activePalletNum){ say('⚠️ אין משטח פעיל — צור משטח קודם', true); return; }
+  if(scannedIds[id]){ say('⚠️ קרטון '+id+' כבר נסרק (משטח '+scannedIds[id]+')', true); return; }
+
+  say('⏳ מחפש במאגר…', false);
+  try{
+    const r=await db().from('cartons').select('*').eq('carton_id',id);
+    if(r.error) throw r.error;
+    const rows=r.data||[];
+    if(!rows.length){
+      say('⚠️ קרטון <b>'+id+'</b> לא נמצא במאגר.<br><span style="font-size:.8rem">בדוק את המספר, או שהתעודה לא נשמרה בעמדת המגדל.</span>', true);
+      return;
+    }
+    const f=rows[0];
+    const items=rows.map(function(c){
+      return { code:c.variety_code||'', len:c.length||'', qty:c.qty!=null?String(c.qty):'',
+               stage:c.stage||'', bunches:c.bunches!=null?String(c.bunches):'',
+               packs:c.packs!=null?String(c.packs):'', weight:c.weight||'' };
+    });
+    const ins=await db().from('depot_scans').insert({
+      carton_id:id, pallet_num:activePalletNum, raw:id,
+      sup:f.sup||'', grower:f.grower_num||'', bursa:f.exchange_code||'',
+      porek:f.handler||'', shiptype:f.transport||'', ctype:f.carton_type||'',
+      items:items, device:DEVICE+(manual?' (ידני)':'')
+    });
+    if(ins.error){
+      if(String(ins.error.message||'').indexOf('duplicate')>-1 || ins.error.code==='23505'){
+        say('⚠️ הקרטון כבר נסרק במכשיר אחר', true); syncFromDb(true); return;
+      }
+      throw ins.error;
+    }
+    say('✅ קרטון <b>'+id+'</b> → משטח '+activePalletNum
+      +'<br><span style="font-size:.85rem">מגדל '+(f.grower_num||'')
+      +(items.length>1?' · <b>מעורב ('+items.length+' זנים)</b>':'')+'<br>'
+      +items.map(function(i2){ return i2.code+' · '+i2.len+'ס"מ · '+i2.qty+' יח\''; }).join('<br>')
+      +'</span>', false);
+    if(manual){ const el=document.getElementById('manualId'); el.value=''; el.focus(); }
+    syncFromDb(true);
+  }catch(e){
+    say('⚠️ '+(e.message||e), true);
+    console.error(e);
+  }
+}
+async function manualAdd(){
+  const el=document.getElementById('manualId');
+  const id=String(el.value||'').replace(/\D/g,'');
+  if(!id){ document.getElementById('manualMsg').innerHTML='<span style="color:#c62828">הקלד מספר קרטון</span>'; return; }
+  await addCarton(id, 'ידני');
+}
+
+function showScanMsg(html, isErr){
+  const box=document.getElementById('lastScan');
+  box.className='last-scan show'+(isErr?' scan-err':'');
+  box.innerHTML=html;
+}
+function focusScan(){ const el=document.getElementById('scanInput'); if(el) el.focus(); }
+
+// ===== גיבוי: סריקה במצלמה =====
+let camScanner=null, camOn=false, scanBlocked=false;
+function toggleCamera(){
+  const zone=document.getElementById('camZone');
+  const btn=document.getElementById('camBtn');
+  if(camOn){ stopCamera(); return; }
+  if(typeof Html5Qrcode==='undefined'){ alert('ספריית הסריקה לא נטענה. נסה לרענן.'); return; }
+  zone.style.display='block';
+  btn.textContent='✕ סגור מצלמה';
+  btn.style.background='#e53935';
+  camOn=true;
+  scanBlocked=false;
+  camScanner=new Html5Qrcode('reader');
+  camScanner.start(
+    { facingMode:'environment' },
+    { fps:5, qrbox:{width:250,height:250} },
+    function(decoded){
+      if(scanBlocked) return;          // חסום מיד
+      scanBlocked=true;                 // נעל
+      handleScan(decoded);
+      if(navigator.vibrate) navigator.vibrate(150);
+      // הצג ספירה לאחור ופתח מחדש אחרי 3 שניות
+      const btn2=document.getElementById('camBtn');
+      let left=3;
+      btn2.textContent='⏸ המתן '+left+'…';
+      const tick=setInterval(function(){
+        left--;
+        if(left>0){ btn2.textContent='⏸ המתן '+left+'…'; }
+        else{
+          clearInterval(tick);
+          scanBlocked=false;
+          if(camOn){ btn2.textContent='✕ סגור מצלמה'; }
+        }
+      },1000);
+    },
+    function(){}
+  ).catch(function(err){
+    alert('לא ניתן לפתוח מצלמה: '+err);
+    stopCamera();
+  });
+}
+function stopCamera(){
+  const zone=document.getElementById('camZone');
+  const btn=document.getElementById('camBtn');
+  if(camScanner){ camScanner.stop().then(function(){ camScanner.clear(); }).catch(function(){}); camScanner=null; }
+  zone.style.display='none';
+  btn.textContent='📱 גיבוי: סרוק במצלמה';
+  btn.style.background='#546e7a';
+  camOn=false;
+  focusScan();
+}
+
+function renderPallets(){
+  const grid=document.getElementById('palletGrid');
+  if(!pallets.length){ grid.innerHTML='<p class="hint">אין משטחים עדיין</p>'; }
+  else {
+    grid.innerHTML=pallets.map(function(p,i){
+      const items=p.cartons.map(function(c){ return '<div class="pc-item"><span>'+(c.code||'—')+'</span><span style="color:#7a8aa0">'+(c.qty||'')+'</span></div>'; }).join('')||'<span class="hint">ריק</span>';
+      return '<div class="pallet '+(p.num===activePalletNum?'active':'')+'" onclick="setActive(\''+p.num+'\')" style="cursor:pointer">'
+        +'<div class="pallet-head">משטח '+p.num+' <span class="seg">'+p.cartons.length+'</span></div>'
+        +'<div class="pallet-body">'+items+'</div></div>';
+    }).join('');
+  }
+  document.getElementById('tPallets').textContent=pallets.length;
+  document.getElementById('tScanned').textContent=Object.keys(scannedIds).length;
+}
+
+// ===== שלב 3 - דוח וייצוא =====
+function renderReport(){
+  const b=document.getElementById('reportBody');
+  const rows=[];
+  pallets.forEach(function(p){ p.cartons.forEach(function(c){
+    const its=(c.items&&c.items.length)?c.items:[{code:c.code,len:c.len,qty:c.qty,stage:c.stage,weight:c.weight}];
+    its.forEach(function(it){ rows.push({pallet:p.num,c:c,it:it}); });
+  }); });
+  if(!rows.length){ b.innerHTML='<tr class="empty-row"><td colspan="10">אין נתונים — סרוק קרטונים בשלב המשטוח</td></tr>'; return; }
+  b.innerHTML=rows.map(function(r){
+    return '<tr><td><b>'+r.pallet+'</b></td><td>'+(r.c.grower||'—')+'</td><td>'+(r.it.code||'—')+'</td><td>'+(r.it.len||'—')+'</td><td>'+(r.it.weight||'—')+'</td><td>'+(r.it.qty||'—')+'</td><td>'+(r.it.stage||'—')+'</td><td>'+(r.c.porek||'—')+'</td><td>'+(r.c.shiptype||'—')+'</td><td style="font-size:.75rem;color:#7a8aa0">'+r.c.cartonId+(r.c.mix?' 🔀':'')+'</td></tr>';
+  }).join('');
+}
+
+function buildExportText(){
+  const fDate=v('flightDate'), fNo=v('flightNo'), fAwb=v('awb');
+  const rows=[];
+  pallets.forEach(function(p){ p.cartons.forEach(function(c){
+    const its=(c.items&&c.items.length)?c.items:[{code:c.code,len:c.len,qty:c.qty,stage:c.stage,weight:c.weight,bunches:c.bunches,packs:c.packs}];
+    its.forEach(function(it){ rows.push({pallet:p.num,c:c,it:it}); });
+  }); });
+  if(!rows.length) return null;
+  const today=new Date().toLocaleDateString('en-GB');
+  const deliveryNo=(new Date().getTime()+'').slice(-7);
+  let out='DELIVERYNO\tCURDATE\tDUEDATE\tSUP\tBURSA\tPOREK\tSHIPTYPE\tKLINE\tPART\tP1\tP2\tP3\tTQUANT\tBUNCH\tPACKAGES\tPACK\tPALLET\tCARTON\tFLIGHTSAIL\tBILLCARGO\n';
+  rows.forEach(function(r,i){
+    const c=r.c, it=r.it;
+    out+=deliveryNo+'\t'+today+'\t'+(fDate||'')+'\t'+(c.sup||'')+'\t'+(c.bursa||'')+'\t'+(c.porek||'')+'\t'+(c.shiptype||'')
+      +'\t'+(i+1)+'\t'+(it.code||'')+'\t'+(it.len||'')+'\t'+(it.weight||'')+'\t'+(it.stage||'')
+      +'\t'+(it.qty||'')+'\t'+(it.bunches||'')+'\t'+(it.packs||'')+'\t'+(c.ctype||'')+'\t'+r.pallet+'\t'+c.cartonId
+      +'\t'+(fNo||'')+'\t'+(fAwb||'')+'\n';
+  });
+  return out;
+}
+function buildExport(){
+  const out=buildExportText();
+  if(!out){ alert('אין נתונים — סרוק קרטונים קודם'); return; }
+  const pv=document.getElementById('exportPreview'); pv.style.display='block'; pv.textContent=out;
+}
+function downloadExport(){
+  const out=buildExportText();
+  if(!out){ alert('אין נתונים לייצוא'); return; }
+  const bom='\uFEFF';
+  const blob=new Blob([bom+out],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='bursa_export_'+new Date().toISOString().slice(0,10)+'.txt';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ===== ניווט =====
+function goStep(n){
+  document.querySelectorAll('.pane').forEach(function(p,i){ p.classList.toggle('active',i===n); });
+  document.querySelectorAll('.step-tab').forEach(function(t,i){ t.classList.toggle('active',i===n); });
+  if(syncTimer){ clearInterval(syncTimer); syncTimer=null; }
+  if(n===1){
+    syncFromDb();
+    syncTimer=setInterval(function(){ syncFromDb(true); },3000);
+    setTimeout(focusScan,100);
+  }
+  if(n===2){ syncFromDb(true); }
+}
+
+// ===== מאזין לסורק =====
+document.getElementById('scanInput').addEventListener('keydown', function(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const val=this.value;
+    this.value='';
+    if(val.trim()) handleScan(val);
+  }
+});
+// שמור את הפוקוס בשדה הסריקה
+document.addEventListener('click', function(e){
+  if(camOn) return; // לא לגנוב פוקוס כשהמצלמה פתוחה
+  if(document.getElementById('pane-1').classList.contains('active')){
+    if(!e.target.closest('input, select, button, a')) focusScan();
+  }
+});
+
+// ===== אתחול =====
+renderReceptions();
+loadGrowers();
+syncFromDb(true);
+</script>
+</body>
+</html>
