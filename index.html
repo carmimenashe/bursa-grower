@@ -134,7 +134,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה B2+P3</span></h1>
+        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה B2+P5</span></h1>
         <p>בית האריזה · מדבקה 100×75 מ"מ (Zebra ZD220)</p>
       </div>
       <a href="https://transcendent-dragon-55ce11.netlify.app" class="no-print" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:700;white-space:nowrap">🏠 דף הבית</a>
@@ -147,7 +147,6 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
       <button id="tabLabels" aria-pressed="true" onclick="showView('labels')">🏷️ מדבקות</button>
       <button id="tabHist" aria-pressed="false" onclick="showView('hist')">📋 היסטוריה</button>
       <button id="tabPick" aria-pressed="false" onclick="showView('pick')">🚚 הזמנת הובלה</button>
-      <button onclick="openSettings()" style="margin-right:auto;background:rgba(255,255,255,.18)">⚙️ הגדרות</button>
     </div>
   </header>
 
@@ -331,27 +330,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
   </div>
 </div>
 
-<div class="overlay" id="setOv">
-  <div class="modal">
-    <div class="mh"><h2>⚙️ הגדרות</h2><p>נשמר בטבלת settings ומשותף לכל העמדות</p></div>
-    <div style="padding:18px">
-      <div class="field"><label>שם הדפו (היעד בתעודה)</label><input id="sDepot" placeholder="א.ד.א. פרש"></div>
-      <div class="field"><label>כתובת הדפו</label><input id="sDepotAddr" placeholder="פרחי השרון, תל-מונד 4065001, ישראל"></div>
-      <div class="field"><label>חברת הובלה</label><input id="sTransport" placeholder="פרחי השרון"></div>
-      <div class="field"><label>שם החברה בכותרת התעודה</label><input id="sCompany" placeholder="בורסת הפרחים"></div>
-      <div class="field"><label>וואטסאפ לקבלת הזמנות הובלה (איש הניהול)</label><input id="sPickPhone" inputmode="tel" placeholder="972501234567"><span style="font-size:.75rem;color:#6b7a90">קידומת מדינה בלי + ובלי 0 מוביל</span></div>
-      <div class="field"><label>נוסח בקשת איסוף בוואטסאפ</label>
-        <textarea id="sWa" style="width:100%;min-height:90px;padding:10px 11px;border:1.5px solid #d4dde8;border-radius:8px;font-family:inherit;font-size:.95rem"></textarea>
-        <p class="hint">משתנים: {grower} {date} {delivery_no} {cartons} {transport}</p>
-      </div>
-      <div id="setMsg" style="font-size:.85rem"></div>
-    </div>
-    <div style="padding:0 18px 18px;display:flex;gap:10px">
-      <button class="btn" style="flex:1" onclick="saveSettings()">💾 שמור</button>
-      <button class="btn" style="flex:1;background:#90a4ae;box-shadow:none" onclick="document.getElementById('setOv').style.display='none'">סגור</button>
-    </div>
-  </div>
-</div>
+
 
 <div class="overlay" id="zplOv">
   <div class="modal">
@@ -841,6 +820,18 @@ function pkInit(){
   pkReady=true;
 }
 
+// ממיר מספר ישראלי לפורמט בינלאומי שוואטסאפ מבין בכל מכשיר
+// 054-734-9991 ← 972547349991 · מספר שכבר בינלאומי נשאר כמו שהוא
+function waPhone(raw){
+  let p=String(raw||'').replace(/\D/g,'');
+  if(!p) return '';
+  if(p.indexOf('00')===0) p=p.slice(2);      // 00972… → 972…
+  if(p.indexOf('972')===0) return p;          // כבר תקין
+  if(p.indexOf('0')===0)  return '972'+p.slice(1);  // 05… → 9725…
+  if(p.length===9)        return '972'+p;     // 54… בלי אפס מוביל
+  return p;                                   // מספר זר — משאירים
+}
+
 // ============ הזמנת הובלה ============
 function pkFillGrower(){
   const i=document.getElementById('pkGrower').value;
@@ -940,12 +931,12 @@ async function savePickup(){
     if(r.error) throw r.error;
     st.innerHTML='<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;color:#1b5e20;font-weight:700">✅ ההזמנה נשמרה</div>';
     // פתיחת וואטסאפ למספר הקבוע שבהגדרות
-    const phone=String(SETTINGS.pickup_phone||'').replace(/\D/g,'');
+    const phone=waPhone(SETTINGS.pickup_phone);
     if(phone){
       const url='https://wa.me/'+phone+'?text='+encodeURIComponent(pkWaText());
       window.open(url,'_blank');
     }else{
-      st.innerHTML+='<div style="background:#fff3e0;border:1px solid #ffb74d;border-radius:8px;padding:10px 14px;margin-top:6px;font-size:.85rem;color:#e65100">⚠️ לא הוגדר מספר וואטסאפ לקבלת הזמנות — ראה ⚙️ הגדרות</div>';
+      st.innerHTML+='<div style="background:#fff3e0;border:1px solid #ffb74d;border-radius:8px;padding:10px 14px;margin-top:6px;font-size:.85rem;color:#e65100">⚠️ לא הוגדר מספר וואטסאפ לקבלת הזמנות — הגדר במסך הניהול</div>';
     }
     loadMyPickups(g.grower_num);
   }catch(e){
@@ -998,36 +989,6 @@ async function loadSettings(){
     SETTINGS=Object.assign({},SDEF);
     (r.data||[]).forEach(function(s){ if(s.value) SETTINGS[s.key]=s.value; });
   }catch(e){ console.error(e); }
-}
-function openSettings(){
-  document.getElementById('sDepot').value=SETTINGS.depot_name;
-  document.getElementById('sDepotAddr').value=SETTINGS.depot_address;
-  document.getElementById('sTransport').value=SETTINGS.transport_name;
-  document.getElementById('sCompany').value=SETTINGS.company_name;
-  document.getElementById('sPickPhone').value=SETTINGS.pickup_phone||'';
-  document.getElementById('sWa').value=SETTINGS.wa_template;
-  document.getElementById('setMsg').innerHTML='';
-  document.getElementById('setOv').style.display='flex';
-}
-async function saveSettings(){
-  const rows=[
-    {key:'depot_name',value:v('sDepot').trim()},
-    {key:'depot_address',value:v('sDepotAddr').trim()},
-    {key:'transport_name',value:v('sTransport').trim()},
-    {key:'company_name',value:v('sCompany').trim()},
-    {key:'pickup_phone',value:v('sPickPhone').trim()},
-    {key:'wa_template',value:document.getElementById('sWa').value}
-  ];
-  const msg=document.getElementById('setMsg');
-  try{
-    const r=await db().from('settings').upsert(rows,{onConflict:'key'});
-    if(r.error) throw r.error;
-    rows.forEach(function(x){SETTINGS[x.key]=x.value;});
-    msg.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשמר</span>';
-    setTimeout(function(){document.getElementById('setOv').style.display='none';},900);
-  }catch(e){
-    msg.innerHTML='<span style="color:#c62828">⚠️ '+(e.message||e)+'</span>';
-  }
 }
 
 // ============ היסטוריה ============
