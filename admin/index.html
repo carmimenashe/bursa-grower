@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ניהול מערכת הבורסה</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:#eef2f7;color:#1a2533;padding:14px;line-height:1.5}
+  .wrap{max-width:1150px;margin:0 auto}
+  header{background:linear-gradient(135deg,#4527a0,#311b92);color:#fff;padding:16px 20px;border-radius:14px;margin-bottom:16px;box-shadow:0 4px 14px rgba(49,27,146,.25)}
+  header h1{font-size:1.25rem}
+  header p{font-size:.85rem;opacity:.9;margin-top:3px}
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .tab{background:#fff;border:2px solid #e0e8f0;border-radius:11px;padding:10px 18px;cursor:pointer;font-weight:700;font-size:.9rem;color:#7a8aa0}
+  .tab.active{border-color:#4527a0;background:#ede7f6;color:#311b92}
+  .card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:14px}
+  .card h2{font-size:1rem;margin-bottom:12px;padding-bottom:7px;border-bottom:2px solid #eef2f7;color:#311b92}
+  label{display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;color:#46586e}
+  .field{margin-bottom:11px}
+  input,select{width:100%;padding:10px 11px;border:1.5px solid #d4dde8;border-radius:8px;font-size:.95rem;font-family:inherit;background:#fff}
+  input:focus,select:focus{outline:none;border-color:#4527a0}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:700px){.row3,.row2{grid-template-columns:1fr}}
+  .btn{padding:10px 16px;background:linear-gradient(135deg,#4527a0,#311b92);color:#fff;border:none;border-radius:9px;font-weight:700;cursor:pointer;font-size:.9rem}
+  .btn-sm{padding:5px 10px;font-size:.8rem;border-radius:6px}
+  .btn-del{background:#e53935}
+  .btn-green{background:linear-gradient(135deg,#2e7d32,#1b5e20)}
+  .btn-light{background:#ede7f6;color:#4527a0}
+  table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:8px}
+  th{background:#f5f8fc;padding:8px 6px;text-align:right;font-size:.75rem;color:#46586e;border-bottom:2px solid #e0e8f0}
+  td{padding:7px 6px;border-bottom:1px solid #eef2f7}
+  .empty td{text-align:center;color:#9bb;padding:20px}
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:14px}
+  @media(max-width:800px){.layout{grid-template-columns:1fr}}
+  .g-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1.5px solid #e0e8f0;border-radius:9px;margin-bottom:7px;cursor:pointer}
+  .g-item:hover{border-color:#7e57c2;background:#f6f3fc}
+  .g-item.active{border-color:#4527a0;background:#ede7f6}
+  .g-item .gn{font-weight:700;font-size:.92rem}
+  .g-item .gnum{font-size:.75rem;color:#7a8aa0}
+  .badge{background:#4527a0;color:#fff;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px}
+  .badge.zero{background:#cfd8e0;color:#667}
+  .chk-list{max-height:340px;overflow-y:auto;border:1.5px solid #e8edf3;border-radius:10px;padding:8px}
+  .chk{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px}
+  .chk:hover{background:#f6f3fc}
+  .chk input{width:16px;height:16px;accent-color:#4527a0}
+  .chk .c-code{font-size:.75rem;color:#7a8aa0;min-width:52px}
+  .status{font-size:.82rem;padding:8px 12px;border-radius:8px;margin-top:8px;display:none}
+  .status.show{display:block}
+  .status.ok{background:#e8f5e9;color:#2e7d32}
+  .status.err{background:#ffebee;color:#c62828}
+  .link-box{background:#e3f2fd;border:1.5px solid #90caf9;border-radius:9px;padding:10px 14px;margin-top:10px;font-size:.85rem;word-break:break-all}
+  .link-box b{color:#0d47a1}
+  .pane{display:none}
+  .pane.active{display:block}
+  .loading{text-align:center;padding:30px;color:#7a8aa0}
+  .sec{background:#f6f3fc;border:1.5px solid #d1c4e9;border-radius:10px;padding:12px 14px;margin-top:12px}
+  .sec h3{font-size:.9rem;color:#4527a0;margin-bottom:9px}
+  .st-pill{font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:20px;background:#e3f2fd;color:#1565c0}
+  .st-pill.done{background:#e8f5e9;color:#2e7d32}
+  .st-pill.cancel{background:#ffebee;color:#c62828}
+  .st-pill.ok{background:#fff8e1;color:#e65100}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div>
+        <h1>⚙️ ניהול מערכת הבורסה <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה A4</span></h1>
+        <p>מגדלים · זנים · בורסות · פורקים · הצמדות · הזמנות הובלה</p>
+      </div>
+      <a href="https://transcendent-dragon-55ce11.netlify.app" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:700;white-space:nowrap">🏠 דף הבית</a>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="goTab(0)">👤 מגדלים והצמדות</div>
+    <div class="tab" onclick="goTab(1)">🏛️ בורסות</div>
+    <div class="tab" onclick="goTab(2)">📦 פורקים</div>
+    <div class="tab" onclick="goTab(3)">📦 סוגי קרטון</div>
+    <div class="tab" onclick="goTab(4)">🚚 הזמנות הובלה</div>
+    <div class="tab" onclick="goTab(5)">⚙️ הגדרות</div>
+  </div>
+
+  <!-- מגדלים והצמדות -->
+  <div class="pane active" id="pane-0">
+    <div class="card">
+      <h2>ייבוא מגדלים וזנים</h2>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn" onclick="document.getElementById('xlsxFile').click()">📥 ייבוא מאקסל</button>
+        <input type="file" id="xlsxFile" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
+        <button class="btn btn-light" onclick="loadAll()">🔄 רענן מהמאגר</button>
+      </div>
+      <div class="status" id="impStatus"></div>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <h2>מגדלים</h2>
+        <input type="text" id="gSearch" placeholder="🔍 חפש..." oninput="renderGrowers()" style="margin-bottom:10px">
+        <div id="growersList"><div class="loading">טוען…</div></div>
+      </div>
+      <div class="card" id="assignPanel">
+        <div class="loading">בחר מגדל מהרשימה</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- בורסות -->
+  <div class="pane" id="pane-1">
+    <div class="card">
+      <h2>הוספת בורסה</h2>
+      <div class="row3">
+        <div class="field"><label>קוד בורסה</label><input type="text" id="exCode" placeholder="90"></div>
+        <div class="field"><label>שם בורסה</label><input type="text" id="exName" placeholder="VBA Aalsmeer"></div>
+        <div class="field" style="display:flex;align-items:flex-end"><button class="btn btn-green" onclick="addExchange()" style="width:100%">➕ הוסף</button></div>
+      </div>
+      <div class="status" id="exStatus"></div>
+    </div>
+    <div class="card">
+      <h2>בורסות במערכת</h2>
+      <table><thead><tr><th>קוד</th><th>שם</th><th></th></tr></thead>
+        <tbody id="exBody"><tr class="empty"><td colspan="3">טוען…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- פורקים -->
+  <div class="pane" id="pane-2">
+    <div class="card">
+      <h2>הוספת פורק</h2>
+      <div class="row3">
+        <div class="field"><label>קוד פורק (אופציונלי)</label><input type="text" id="hCode" placeholder="0002"></div>
+        <div class="field"><label>שם פורק</label><input type="text" id="hName" placeholder="FGP Handling"></div>
+        <div class="field" style="display:flex;align-items:flex-end"><button class="btn btn-green" onclick="addHandler()" style="width:100%">➕ הוסף</button></div>
+      </div>
+      <div class="status" id="hStatus"></div>
+    </div>
+    <div class="card">
+      <h2>פורקים במערכת</h2>
+      <table><thead><tr><th>קוד</th><th>שם</th><th></th></tr></thead>
+        <tbody id="hBody"><tr class="empty"><td colspan="3">טוען…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- סוגי קרטון -->
+  <div class="pane" id="pane-3">
+    <div class="card">
+      <h2>הוספת סוג קרטון</h2>
+      <div class="row3">
+        <div class="field"><label>קוד (אופציונלי)</label><input type="text" id="ctCode" placeholder="T"></div>
+        <div class="field"><label>שם סוג הקרטון</label><input type="text" id="ctName" placeholder="BOX 41 / TRIWALL"></div>
+        <div class="field" style="display:flex;align-items:flex-end"><button class="btn btn-green" onclick="addCartonType()" style="width:100%">➕ הוסף</button></div>
+      </div>
+      <div class="status" id="ctStatus"></div>
+    </div>
+    <div class="card">
+      <h2>סוגי קרטון במערכת</h2>
+      <table><thead><tr><th>קוד</th><th>שם</th><th></th></tr></thead>
+        <tbody id="ctBody"><tr class="empty"><td colspan="3">טוען…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- הזמנות הובלה -->
+  <div class="pane" id="pane-4">
+    <div class="card">
+      <h2>ריכוז הזמנות הובלה</h2>
+      <div class="row3">
+        <div class="field"><label>מתאריך</label><input type="date" id="pkFrom" onchange="loadPickups()"></div>
+        <div class="field"><label>עד תאריך</label><input type="date" id="pkTo" onchange="loadPickups()"></div>
+        <div class="field"><label>סטטוס</label>
+          <select id="pkStatusFilter" onchange="renderPickups()">
+            <option value="">הכל</option>
+            <option value="חדש">חדש</option>
+            <option value="אושר">אושר</option>
+            <option value="בוצע">בוצע</option>
+            <option value="בוטל">בוטל</option>
+          </select></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-light" onclick="loadPickups()">🔄 רענן</button>
+        <button class="btn btn-green" onclick="exportPickups()">📊 ייצוא לאקסל למוביל</button>
+      </div>
+      <div class="status" id="pkStatus"></div>
+      <div id="pkSummary" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <h2>הזמנות</h2>
+      <div style="overflow-x:auto">
+      <table><thead><tr>
+        <th>תאריך</th><th>שעה</th><th>מגדל</th><th>כתובת</th><th>טלפון</th>
+        <th>משטחים</th><th>קרטונים</th><th>סוג</th><th>הובלה</th><th>יעד</th>
+        <th>הערות</th><th>סטטוס</th><th></th>
+      </tr></thead>
+        <tbody id="pkBody"><tr class="empty"><td colspan="13">טוען…</td></tr></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- הגדרות -->
+  <div class="pane" id="pane-5">
+    <div class="card">
+      <h2>הגדרות מערכת</h2>
+      <p style="font-size:.85rem;color:#6b7a90;margin-bottom:14px">נשמר בטבלת settings ומשותף לכל העמדות. עמדת המגדל קוראת מכאן ולא ניתנת לעריכה שם.</p>
+
+      <div class="sec"><h3>📄 תעודת משלוח לדפו בארץ</h3>
+        <div class="row2">
+          <div class="field"><label>שם הדפו (היעד בתעודה)</label><input id="sDepot" placeholder="א.ד.א. פרש"></div>
+          <div class="field"><label>חברת הובלה</label><input id="sTransport" placeholder="פרחי השרון"></div>
+        </div>
+        <div class="field"><label>כתובת הדפו</label><input id="sDepotAddr" placeholder="פרחי השרון, תל-מונד 4065001, ישראל"></div>
+        <div class="field" style="margin-bottom:0"><label>שם החברה בכותרת התעודה</label><input id="sCompany" placeholder="בורסת הפרחים"></div>
+      </div>
+
+      <div class="sec"><h3>📱 וואטסאפ</h3>
+        <div class="field"><label>טלפון מנהל הלוגיסטיקה — מקבל את הזמנות ההובלה</label>
+          <input id="sPickPhone" inputmode="tel" placeholder="0547349991">
+          <span style="font-size:.75rem;color:#6b7a90">אפשר להזין כרגיל — המערכת ממירה אוטומטית לפורמט בינלאומי</span></div>
+        <div class="field" style="margin-bottom:0"><label>נוסח בקשת איסוף (מתעודת משלוח קיימת)</label>
+          <textarea id="sWa" style="width:100%;min-height:90px;padding:10px 11px;border:1.5px solid #d4dde8;border-radius:8px;font-family:inherit;font-size:.95rem"></textarea>
+          <span style="font-size:.75rem;color:#6b7a90">משתנים: {grower} {date} {delivery_no} {cartons} {transport}</span></div>
+      </div>
+
+      <button class="btn btn-green" style="margin-top:14px" onclick="saveSettings()">💾 שמור הגדרות</button>
+      <div class="status" id="setStatus"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://oilbwsvwzxhsobmtmhlw.supabase.co';
+const SUPABASE_KEY='sb_publishable_-_Akw2cZOsagxTrNVFpidA_xCIxYgCk';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const GROWER_STATION='https://dainty-marzipan-bf1318.netlify.app';
+
+let growers=[], varieties=[], exchanges=[], handlers=[], cartonTypes=[];
+let gVars={}, gExch={}, gHand={};
+let activeGrower=null;
+let pickups=[];
+
+function v(id){ return document.getElementById(id).value; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function showStatus(id,msg,isErr){
+  const el=document.getElementById(id);
+  el.className='status show '+(isErr?'err':'ok');
+  el.textContent=msg;
+  setTimeout(function(){ el.className='status'; },5000);
+}
+
+async function loadAll(){
+  try{
+    const [g,vr,ex,hd,gv,ge,gh,ct]=await Promise.all([
+      db.from('growers').select('*').order('name'),
+      db.from('varieties').select('*').order('descr'),
+      db.from('exchanges').select('*').order('code'),
+      db.from('handlers').select('*').order('name'),
+      db.from('grower_varieties').select('*'),
+      db.from('grower_exchanges').select('*'),
+      db.from('grower_handlers').select('*'),
+      db.from('carton_types').select('*').order('name')
+    ]);
+    growers=g.data||[]; varieties=vr.data||[]; exchanges=ex.data||[]; handlers=hd.data||[]; cartonTypes=ct.data||[];
+    gVars={}; (gv.data||[]).forEach(function(r){ (gVars[r.grower_num]=gVars[r.grower_num]||new Set()).add(r.variety_code); });
+    gExch={}; (ge.data||[]).forEach(function(r){ (gExch[r.grower_num]=gExch[r.grower_num]||new Set()).add(r.exchange_code); });
+    gHand={}; (gh.data||[]).forEach(function(r){ (gHand[r.grower_num]=gHand[r.grower_num]||new Set()).add(r.handler_name); });
+    renderGrowers(); renderExchanges(); renderHandlers(); renderCartonTypes();
+    if(activeGrower) renderPanel();
+  }catch(e){ console.error(e); showStatus('impStatus','שגיאה בטעינה: '+e.message,true); }
+}
+
+// ===== מגדלים =====
+function renderGrowers(){
+  const q=(document.getElementById('gSearch').value||'').toLowerCase();
+  const list=document.getElementById('growersList');
+  const filtered=growers.filter(function(g){ return g.name.toLowerCase().includes(q)||g.grower_num.includes(q); });
+  if(!filtered.length){ list.innerHTML='<div class="loading">אין מגדלים — ייבא מאקסל</div>'; return; }
+  list.innerHTML=filtered.map(function(g){
+    const c=(gVars[g.grower_num]||new Set()).size;
+    const noAddr=!g.address;
+    return '<div class="g-item '+(activeGrower===g.grower_num?'active':'')+'" onclick="selectGrower(\''+g.grower_num+'\')">'
+      +'<div><div class="gn">'+esc(g.name)+(noAddr?' <span title="חסרה כתובת" style="color:#e65100">⚠</span>':'')+'</div>'
+      +'<div class="gnum">מס׳ '+g.grower_num+(g.sup?' · ספק '+esc(g.sup):'')+'</div></div>'
+      +'<span class="badge '+(c===0?'zero':'')+'">'+c+'</span></div>';
+  }).join('');
+}
+function selectGrower(num){ activeGrower=num; renderGrowers(); renderPanel(); }
+
+function renderPanel(){
+  const g=growers.find(function(x){ return x.grower_num===activeGrower; });
+  if(!g) return;
+  const myV=gVars[g.grower_num]||new Set(), myE=gExch[g.grower_num]||new Set(), myH=gHand[g.grower_num]||new Set();
+  const link=GROWER_STATION+'/?g='+g.grower_num;
+  document.getElementById('assignPanel').innerHTML=
+    '<h2>'+esc(g.name)+' <span style="font-weight:400;color:#7a8aa0;font-size:.85rem">(מס׳ '+g.grower_num+')</span></h2>'
+    +'<div class="row2"><div class="field"><label>מספר ספק פנימי (SUP)</label>'
+    +'<input type="text" id="supEdit" value="'+esc(g.sup)+'" placeholder="SISFL0637"></div>'
+    +'<div class="field"><label>GGN</label><input type="text" id="ggnEdit" value="'+esc(g.ggn)+'" placeholder="4063061045300"></div></div>'
+
+    +'<div class="sec"><h3>📍 פרטי איסוף — משמשים בהזמנות הובלה</h3>'
+    +'<div class="row2">'
+    +'<div class="field"><label>כתובת</label><input type="text" id="addrEdit" value="'+esc(g.address)+'" placeholder="רחוב ומספר"></div>'
+    +'<div class="field"><label>עיר</label><input type="text" id="cityEdit" value="'+esc(g.city)+'" placeholder="תל-מונד"></div>'
+    +'</div><div class="row2">'
+    +'<div class="field"><label>טלפון</label><input type="text" id="phoneEdit" value="'+esc(g.phone)+'" inputmode="tel" placeholder="050-1234567"></div>'
+    +'<div class="field"><label>איש קשר באתר</label><input type="text" id="contactEdit" value="'+esc(g.contact)+'"></div>'
+    +'</div>'
+    +'<div class="field" style="margin-bottom:0"><label>הערות לנהג</label><input type="text" id="notesEdit" value="'+esc(g.notes)+'" placeholder="שער אחורי, לצלצל לפני הגעה"></div>'
+    +'</div>'
+
+    +'<button class="btn btn-sm" style="margin-top:10px" onclick="saveGrowerInfo()">💾 שמור פרטים</button>'
+    +'<div class="link-box">🔗 קישור אישי למגדל:<br><b>'+link+'</b><br>'
+    +'<button class="btn btn-sm btn-light" style="margin-top:6px" onclick="copyLink(\''+link+'\')">📋 העתק קישור</button></div>'
+    +'<h2 style="margin-top:16px">זנים ('+myV.size+')</h2>'
+    +'<div class="chk-list">'+varieties.map(function(vr){
+        return '<label class="chk"><input type="checkbox" '+(myV.has(vr.code)?'checked':'')+' onchange="toggleVar(\''+vr.code+'\',this.checked)">'
+          +'<span class="c-code">'+vr.code+'</span><span>'+esc(vr.descr)+'</span></label>'; }).join('')+'</div>'
+    +'<h2 style="margin-top:16px">בורסות ('+myE.size+')</h2>'
+    +'<div class="chk-list" style="max-height:150px">'+(exchanges.length?exchanges.map(function(e){
+        return '<label class="chk"><input type="checkbox" '+(myE.has(e.code)?'checked':'')+' onchange="toggleExch(\''+e.code+'\',this.checked)">'
+          +'<span class="c-code">'+e.code+'</span><span>'+esc(e.name)+'</span></label>'; }).join(''):'<div class="loading">הוסף בורסות בלשונית בורסות</div>')+'</div>'
+    +'<h2 style="margin-top:16px">פורקים ('+myH.size+')</h2>'
+    +'<div class="chk-list" style="max-height:150px">'+(handlers.length?handlers.map(function(h){
+        return '<label class="chk"><input type="checkbox" '+(myH.has(h.name)?'checked':'')+' onchange="toggleHand(\''+h.name+'\',this.checked)">'
+          +'<span>'+esc(h.name)+'</span></label>'; }).join(''):'<div class="loading">הוסף פורקים בלשונית פורקים</div>')+'</div>';
+}
+
+function copyLink(link){ navigator.clipboard.writeText(link); alert('✓ הקישור הועתק! שלח אותו למגדל.'); }
+
+async function saveGrowerInfo(){
+  const patch={
+    sup:v('supEdit'), ggn:v('ggnEdit'),
+    address:v('addrEdit'), city:v('cityEdit'),
+    phone:v('phoneEdit'), contact:v('contactEdit'), notes:v('notesEdit')
+  };
+  const {error}=await db.from('growers').update(patch).eq('grower_num',activeGrower);
+  if(error){ alert('שגיאה: '+error.message); return; }
+  const g=growers.find(function(x){return x.grower_num===activeGrower;});
+  if(g) Object.assign(g,patch);
+  renderGrowers();
+  alert('✓ נשמר');
+}
+
+async function toggleVar(code,on){
+  if(on){ await db.from('grower_varieties').insert({grower_num:activeGrower,variety_code:code});
+    (gVars[activeGrower]=gVars[activeGrower]||new Set()).add(code); }
+  else { await db.from('grower_varieties').delete().eq('grower_num',activeGrower).eq('variety_code',code);
+    if(gVars[activeGrower]) gVars[activeGrower].delete(code); }
+  renderGrowers(); renderPanel();
+}
+async function toggleExch(code,on){
+  if(on){ await db.from('grower_exchanges').insert({grower_num:activeGrower,exchange_code:code});
+    (gExch[activeGrower]=gExch[activeGrower]||new Set()).add(code); }
+  else { await db.from('grower_exchanges').delete().eq('grower_num',activeGrower).eq('exchange_code',code);
+    if(gExch[activeGrower]) gExch[activeGrower].delete(code); }
+  renderPanel();
+}
+async function toggleHand(name,on){
+  if(on){ await db.from('grower_handlers').insert({grower_num:activeGrower,handler_name:name});
+    (gHand[activeGrower]=gHand[activeGrower]||new Set()).add(name); }
+  else { await db.from('grower_handlers').delete().eq('grower_num',activeGrower).eq('handler_name',name);
+    if(gHand[activeGrower]) gHand[activeGrower].delete(name); }
+  renderPanel();
+}
+
+// ===== בורסות =====
+async function addExchange(){
+  const code=v('exCode').trim(), name=v('exName').trim();
+  if(!code||!name){ showStatus('exStatus','הזן קוד ושם',true); return; }
+  const {error}=await db.from('exchanges').insert({code:code,name:name});
+  if(error){ showStatus('exStatus','שגיאה: '+error.message,true); return; }
+  document.getElementById('exCode').value=''; document.getElementById('exName').value='';
+  showStatus('exStatus','✓ נוספה בורסה '+name,false);
+  await loadAll();
+}
+async function delExchange(id){
+  if(!confirm('למחוק?')) return;
+  await db.from('exchanges').delete().eq('id',id); await loadAll();
+}
+function renderExchanges(){
+  const b=document.getElementById('exBody');
+  if(!exchanges.length){ b.innerHTML='<tr class="empty"><td colspan="3">אין בורסות</td></tr>'; return; }
+  b.innerHTML=exchanges.map(function(e){ return '<tr><td><b>'+e.code+'</b></td><td>'+esc(e.name)+'</td>'
+    +'<td><button class="btn btn-sm btn-del" onclick="delExchange('+e.id+')">✕</button></td></tr>'; }).join('');
+}
+
+// ===== פורקים =====
+async function addHandler(){
+  const code=v('hCode').trim(), name=v('hName').trim();
+  if(!name){ showStatus('hStatus','הזן שם פורק',true); return; }
+  const {error}=await db.from('handlers').insert({code:code||null,name:name});
+  if(error){ showStatus('hStatus','שגיאה: '+error.message,true); return; }
+  document.getElementById('hCode').value=''; document.getElementById('hName').value='';
+  showStatus('hStatus','✓ נוסף פורק '+name,false);
+  await loadAll();
+}
+async function delHandler(id){
+  if(!confirm('למחוק?')) return;
+  await db.from('handlers').delete().eq('id',id); await loadAll();
+}
+function renderHandlers(){
+  const b=document.getElementById('hBody');
+  if(!handlers.length){ b.innerHTML='<tr class="empty"><td colspan="3">אין פורקים</td></tr>'; return; }
+  b.innerHTML=handlers.map(function(h){ return '<tr><td>'+(h.code||'—')+'</td><td><b>'+esc(h.name)+'</b></td>'
+    +'<td><button class="btn btn-sm btn-del" onclick="delHandler('+h.id+')">✕</button></td></tr>'; }).join('');
+}
+
+// ===== סוגי קרטון =====
+async function addCartonType(){
+  const code=v('ctCode').trim(), name=v('ctName').trim();
+  if(!name){ showStatus('ctStatus','הזן שם סוג קרטון',true); return; }
+  const {error}=await db.from('carton_types').insert({code:code||null,name:name});
+  if(error){ showStatus('ctStatus','שגיאה: '+error.message,true); return; }
+  document.getElementById('ctCode').value=''; document.getElementById('ctName').value='';
+  showStatus('ctStatus','✓ נוסף סוג קרטון '+name,false);
+  await loadAll();
+}
+async function delCartonType(id){
+  if(!confirm('למחוק?')) return;
+  await db.from('carton_types').delete().eq('id',id); await loadAll();
+}
+function renderCartonTypes(){
+  const b=document.getElementById('ctBody');
+  if(!cartonTypes.length){ b.innerHTML='<tr class="empty"><td colspan="3">אין סוגי קרטון</td></tr>'; return; }
+  b.innerHTML=cartonTypes.map(function(c){ return '<tr><td>'+(c.code||'—')+'</td><td><b>'+esc(c.name)+'</b></td>'
+    +'<td><button class="btn btn-sm btn-del" onclick="delCartonType('+c.id+')">✕</button></td></tr>'; }).join('');
+}
+
+// ===== הזמנות הובלה =====
+async function loadPickups(){
+  const b=document.getElementById('pkBody');
+  b.innerHTML='<tr class="empty"><td colspan="13">⏳ טוען…</td></tr>';
+  try{
+    let q=db.from('pickups').select('*').order('pickup_date').order('grower_name');
+    if(v('pkFrom')) q=q.gte('pickup_date',v('pkFrom'));
+    if(v('pkTo'))   q=q.lte('pickup_date',v('pkTo'));
+    const r=await q;
+    if(r.error) throw r.error;
+    pickups=r.data||[];
+    renderPickups();
+  }catch(e){
+    console.error(e);
+    b.innerHTML='<tr class="empty"><td colspan="13" style="color:#c62828">⚠️ '+esc(e.message||e)+'</td></tr>';
+  }
+}
+function filteredPickups(){
+  const st=v('pkStatusFilter');
+  return pickups.filter(function(p){ return !st || p.status===st; });
+}
+function pillClass(s){
+  if(s==='בוצע') return 'done';
+  if(s==='בוטל') return 'cancel';
+  if(s==='אושר') return 'ok';
+  return '';
+}
+function renderPickups(){
+  const b=document.getElementById('pkBody');
+  const rows=filteredPickups();
+  const sum=document.getElementById('pkSummary');
+  if(!rows.length){
+    b.innerHTML='<tr class="empty"><td colspan="13">אין הזמנות בטווח שנבחר</td></tr>';
+    sum.innerHTML=''; return;
+  }
+  const tP=rows.reduce(function(s,p){return s+(p.est_pallets||0);},0);
+  const tC=rows.reduce(function(s,p){return s+(p.est_cartons||0);},0);
+  sum.innerHTML='<div style="background:#ede7f6;border-radius:9px;padding:10px 16px;display:flex;gap:20px;flex-wrap:wrap;font-size:.9rem">'
+    +'<span>הזמנות: <b>'+rows.length+'</b></span>'
+    +'<span>מגדלים: <b>'+new Set(rows.map(function(p){return p.grower_num;})).size+'</b></span>'
+    +'<span>משטחים: <b>'+tP+'</b></span>'
+    +'<span>קרטונים: <b>'+tC+'</b></span></div>';
+
+  b.innerHTML=rows.map(function(p){
+    const addr=[p.address,p.city].filter(Boolean).join(', ');
+    return '<tr>'
+      +'<td><b>'+(p.pickup_date||'')+'</b></td>'
+      +'<td>'+esc(p.pickup_time||'—')+'</td>'
+      +'<td><b>'+esc(p.grower_name||p.grower_num)+'</b><div style="font-size:.72rem;color:#7a8aa0">'+esc(p.grower_num)+'</div></td>'
+      +'<td>'+esc(addr||'—')+'</td>'
+      +'<td>'+esc(p.phone||'—')+'</td>'
+      +'<td>'+(p.est_pallets||0)+'</td>'
+      +'<td>'+(p.est_cartons||0)+'</td>'
+      +'<td>'+esc(p.carton_type||'—')+'</td>'
+      +'<td>'+esc(p.transport||'—')+'</td>'
+      +'<td>'+esc(p.destination||'—')+'</td>'
+      +'<td style="max-width:160px;font-size:.78rem">'+esc(p.notes||'')+'</td>'
+      +'<td><span class="st-pill '+pillClass(p.status)+'">'+esc(p.status||'')+'</span></td>'
+      +'<td style="white-space:nowrap">'
+        +'<select onchange="setPickupStatus('+p.id+',this.value)" style="padding:4px;font-size:.78rem;width:auto">'
+        +['חדש','אושר','בוצע','בוטל'].map(function(s){
+            return '<option '+(p.status===s?'selected':'')+'>'+s+'</option>'; }).join('')
+        +'</select> '
+        +'<button class="btn btn-sm btn-del" onclick="delPickup('+p.id+')">✕</button>'
+      +'</td></tr>';
+  }).join('');
+}
+async function setPickupStatus(id,st){
+  const {error}=await db.from('pickups').update({status:st}).eq('id',id);
+  if(error){ showStatus('pkStatus','שגיאה: '+error.message,true); return; }
+  const p=pickups.find(function(x){return x.id===id;});
+  if(p) p.status=st;
+  renderPickups();
+}
+async function delPickup(id){
+  if(!confirm('למחוק את ההזמנה?')) return;
+  await db.from('pickups').delete().eq('id',id);
+  await loadPickups();
+}
+
+function exportPickups(){
+  const rows=filteredPickups();
+  if(!rows.length){ showStatus('pkStatus','אין הזמנות לייצוא',true); return; }
+  const data=rows.map(function(p){
+    return {
+      'תאריך איסוף':p.pickup_date||'',
+      'שעה':p.pickup_time||'',
+      'מגדל':p.grower_name||'',
+      'מס׳ מגדל':p.grower_num||'',
+      'כתובת':p.address||'',
+      'עיר':p.city||'',
+      'טלפון':p.phone||'',
+      'איש קשר':p.contact||'',
+      'משטחים':p.est_pallets||0,
+      'קרטונים':p.est_cartons||0,
+      'סוג קרטון':p.carton_type||'',
+      'הובלה':p.transport||'',
+      'יעד':p.destination||'',
+      'הערות':p.notes||'',
+      'סטטוס':p.status||''
+    };
+  });
+  // שורת סיכום
+  data.push({
+    'תאריך איסוף':'סה״כ','שעה':'','מגדל':rows.length+' הזמנות','מס׳ מגדל':'',
+    'כתובת':'','עיר':'','טלפון':'','איש קשר':'',
+    'משטחים':rows.reduce(function(s,p){return s+(p.est_pallets||0);},0),
+    'קרטונים':rows.reduce(function(s,p){return s+(p.est_cartons||0);},0),
+    'סוג קרטון':'','הובלה':'','יעד':'','הערות':'','סטטוס':''
+  });
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws['!cols']=[{wch:12},{wch:10},{wch:24},{wch:10},{wch:26},{wch:14},{wch:14},{wch:14},
+               {wch:9},{wch:9},{wch:16},{wch:8},{wch:22},{wch:26},{wch:9}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'הזמנות הובלה');
+  const from=v('pkFrom')||'הכל', to=v('pkTo')||'';
+  XLSX.writeFile(wb,'הזמנות_הובלה_'+from+(to?'_עד_'+to:'')+'.xlsx');
+  showStatus('pkStatus','✅ יוצאו '+rows.length+' הזמנות',false);
+}
+
+// ===== ייבוא מאקסל =====
+function importExcel(e){
+  const file=e.target.files[0]; if(!file) return;
+  showStatus('impStatus','⏳ קורא קובץ...',false);
+  const reader=new FileReader();
+  reader.onload=async function(ev){
+    try{
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      if(!rows.length){ showStatus('impStatus','הקובץ ריק',true); return; }
+      const keys=Object.keys(rows[0]);
+      const find=function(o){ return keys.find(function(k){ return o.some(function(x){ return k.toLowerCase().trim().includes(x); }); }); };
+      const cG=find(['ext number','grower num','מספר מגדל'])||find(['ext']);
+      const cGn=find(['grower','מגדל']);
+      const cV=find(['variety code','קוד']);
+      const cVd=find(['variety desc','desc','תיאור']);
+      if(!cG||!cV){ showStatus('impStatus','לא זוהו עמודות מגדל/זן',true); return; }
+
+      const gMap={}, vMap={};
+      rows.forEach(function(r){
+        const gn=String(r[cG]||'').trim(), vc=String(r[cV]||'').trim();
+        if(!gn||!vc) return;
+        if(!gMap[gn]) gMap[gn]={ grower_num:gn, name:String(r[cGn]||'').trim()||gn };
+        vMap[vc]={ code:vc, descr:cVd?String(r[cVd]||'').trim():vc };
+        (gMap[gn].vars=gMap[gn].vars||new Set()).add(vc);
+      });
+
+      showStatus('impStatus','⏳ שומר למאגר...',false);
+      await db.from('growers').upsert(Object.values(gMap).map(function(g){ return {grower_num:g.grower_num,name:g.name}; }),{onConflict:'grower_num'});
+      await db.from('varieties').upsert(Object.values(vMap),{onConflict:'code'});
+      const links=[];
+      Object.values(gMap).forEach(function(g){ g.vars.forEach(function(vc){ links.push({grower_num:g.grower_num,variety_code:vc}); }); });
+      await db.from('grower_varieties').upsert(links,{onConflict:'grower_num,variety_code'});
+
+      showStatus('impStatus','✅ נשמרו '+Object.keys(gMap).length+' מגדלים ו-'+Object.keys(vMap).length+' זנים במאגר',false);
+      await loadAll();
+    }catch(err){ console.error(err); showStatus('impStatus','שגיאה: '+err.message,true); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+
+// ===== הגדרות מערכת =====
+const SDEF={ depot_name:'', depot_address:'', transport_name:'', company_name:'', pickup_phone:'', wa_template:'' };
+let SETTINGS=Object.assign({},SDEF);
+async function loadSettings(){
+  try{
+    const r=await db.from('settings').select('key,value');
+    if(r.error) throw r.error;
+    SETTINGS=Object.assign({},SDEF);
+    (r.data||[]).forEach(function(x){ if(x.value) SETTINGS[x.key]=x.value; });
+    document.getElementById('sDepot').value=SETTINGS.depot_name;
+    document.getElementById('sDepotAddr').value=SETTINGS.depot_address;
+    document.getElementById('sTransport').value=SETTINGS.transport_name;
+    document.getElementById('sCompany').value=SETTINGS.company_name;
+    document.getElementById('sPickPhone').value=SETTINGS.pickup_phone;
+    document.getElementById('sWa').value=SETTINGS.wa_template;
+  }catch(e){ showStatus('setStatus','שגיאה בטעינת הגדרות: '+(e.message||e),true); }
+}
+async function saveSettings(){
+  const rows=[
+    {key:'depot_name',value:v('sDepot').trim()},
+    {key:'depot_address',value:v('sDepotAddr').trim()},
+    {key:'transport_name',value:v('sTransport').trim()},
+    {key:'company_name',value:v('sCompany').trim()},
+    {key:'pickup_phone',value:v('sPickPhone').trim()},
+    {key:'wa_template',value:document.getElementById('sWa').value}
+  ];
+  const {error}=await db.from('settings').upsert(rows,{onConflict:'key'});
+  if(error){ showStatus('setStatus','שגיאה: '+error.message,true); return; }
+  rows.forEach(function(x){ SETTINGS[x.key]=x.value; });
+  showStatus('setStatus','✅ ההגדרות נשמרו — כל העמדות יקראו אותן',false);
+}
+
+function goTab(n){
+  document.querySelectorAll('.pane').forEach(function(p,i){ p.classList.toggle('active',i===n); });
+  document.querySelectorAll('.tab').forEach(function(t,i){ t.classList.toggle('active',i===n); });
+  if(n===4 && !pickups.length) loadPickups();
+  if(n===5) loadSettings();
+}
+
+loadAll();
+</script>
+</body>
+</html>
