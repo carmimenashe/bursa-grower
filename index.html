@@ -134,7 +134,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה B2+P5</span></h1>
+        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה C1</span></h1>
         <p>בית האריזה · מדבקה 100×75 מ"מ (Zebra ZD220)</p>
       </div>
       <a href="https://transcendent-dragon-55ce11.netlify.app" class="no-print" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:700;white-space:nowrap">🏠 דף הבית</a>
@@ -234,7 +234,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
   <div class="card no-print" style="text-align:center">
     <button class="btn btn-print" onclick="generate()" style="padding:14px 24px">🏷️ תצוגה מקדימה</button>
     <button class="btn btn-zebra" onclick="printZebra()" style="padding:14px 24px;margin-right:8px">🖨️ הדפס למדפסת</button>
-    <button class="btn btn-save" onclick="saveDelivery()" style="padding:14px 20px;margin-right:8px">💾 שמור למאגר</button>
+    <button class="btn btn-save" id="btnSave" onclick="saveDelivery()" style="padding:14px 20px;margin-right:8px;display:none">🔄 נסה לשמור שוב</button>
     <button class="btn" onclick="showZPL()" style="padding:14px 18px;margin-right:8px;background:#78909c;box-shadow:none;font-size:.9rem">קוד ZPL</button>
     <div id="pst" style="margin-top:10px;font-size:.85rem"></div>
     <div id="sst" style="margin-top:8px;font-size:.85rem"></div>
@@ -575,12 +575,12 @@ function saveEdit(){
 }
 
 // ===== בניית נתוני ברקוד =====
+// הברקוד מכיל את מספר הקרטון בלבד (8 ספרות).
+// כל שאר הנתונים נשלפים מהמאגר בעמדת הדפו לפי המספר הזה.
+// הפורמט הארוך הקודם בוטל: הוא הגדיל את הסמל ופגע בקריאוּת,
+// וכל קרטון ממילא נשמר למאגר לפני ההדפסה.
 function buildDM(g,c,serial,destCode,handler,transport){
-  const head=[g.sup||'',g.grower_num,serial,destCode,handler,transport,c.ctype].join('|');
-  const items=c.items.map(function(x){
-    return [x.code,x.len,x.total,x.stage,x.bunches,x.packs,x.wgt].join('~');
-  }).join('|');
-  return head+'||'+items;
+  return String(serial);
 }
 function serialOf(i){return String(serialBase+i).slice(-8).padStart(8,'0');}
 
@@ -658,6 +658,7 @@ async function saveDelivery(){
           exchange_code:x.dest.code||null,
           handler:x.handler||null,
           transport:x.transport||null,
+          carton_type:c.ctype||null,
           pallet_num:null,
           created_at:when
         });
@@ -684,9 +685,13 @@ async function saveDelivery(){
     if(r.error) throw r.error;
 
     sst.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשמר במאגר — תעודה '+dno+' · '+cartons.length+' קרטונים</span>';
+    const bs=document.getElementById('btnSave'); if(bs) bs.style.display='none';
+    return true;
   }catch(e){
-    sst.innerHTML='<div style="background:#ffebee;border:1px solid #ef9a9a;border-radius:8px;padding:10px 14px;text-align:right;color:#c62828;font-size:.85rem;margin-top:6px">⚠️ <b>השמירה למאגר נכשלה:</b> '+(e.message||e)+'<br>המדבקות תקינות. נסה שוב עם "💾 שמור למאגר".</div>';
+    sst.innerHTML='<div style="background:#ffebee;border:1px solid #ef9a9a;border-radius:8px;padding:10px 14px;text-align:right;color:#c62828;font-size:.85rem;margin-top:6px">⚠️ <b>השמירה למאגר נכשלה:</b> '+(e.message||e)+'</div>';
     console.error(e);
+    const bs=document.getElementById('btnSave'); if(bs) bs.style.display='';
+    return false;
   }
 }
 
@@ -773,9 +778,18 @@ function dlZPL(){
   const b=new Blob([z],{type:'text/plain'});const u=URL.createObjectURL(b);
   const a=document.createElement('a');a.href=u;a.download='labels_'+v('delivery')+'.zpl';a.click();URL.revokeObjectURL(u);
 }
-function printZebra(){
+async function printZebra(){
   const z=buildZPL();if(!z)return;
   const st=document.getElementById('pst');
+
+  // שמירה למאגר קודם. אין רישום — אין הדפסה.
+  st.innerHTML='<span style="color:#e65100">⏳ שומר למאגר לפני ההדפסה...</span>';
+  const saved=await saveDelivery();
+  if(!saved){
+    st.innerHTML='<div style="background:#ffebee;border:1px solid #ef9a9a;border-radius:8px;padding:10px 14px;text-align:right;color:#c62828;font-size:.85rem;margin-top:6px">🛑 <b>ההדפסה בוטלה</b> — התעודה לא נשמרה במאגר.<br>ללא רישום, הדפו לא יוכל לזהות את הקרטונים. תקן את השגיאה למעלה ונסה שוב.</div>';
+    return;
+  }
+
   st.innerHTML='<span style="color:#00695c">⏳ מתחבר למדפסת...</span>';
   const bases=['http://127.0.0.1:9100','https://127.0.0.1:9101','http://localhost:9100'];
   (function tryB(i){
@@ -791,7 +805,6 @@ function printZebra(){
         .catch(function(){st.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשלח למדפסת</span>';});
     }).catch(function(){tryB(i+1);});
   })(0);
-  saveDelivery();
 }
 
 // ============ לשוניות ============
@@ -1173,9 +1186,29 @@ function waPickup(id){
 
 document.getElementById('delivery').value=(1300000+Math.floor(Math.random()*99999));
 document.getElementById('ddate').value=new Date().toISOString().slice(0,10);
-serialBase=parseInt(String(Date.now()).slice(-8));
+// מזהה הקרטון: 8 ספרות. בעבר נגזר מהשעון בלבד (Date.now חתוך),
+// ולכן חזר על עצמו כל ~27.8 שעות והתנגש במזהה קיים.
+// עכשיו: בסיס אקראי, שנבדק מול המאגר לפני שמדפיסים משהו.
+function newSerialBase(){ return Math.floor(Math.random()*89000000)+10000000; }
+serialBase=newSerialBase();
+
+// מוודא שטווח המזהים פנוי. רץ פעם אחת בטעינה, לפני כל הדפסה.
+async function reserveSerials(){
+  const WINDOW=300;   // מקום לתעודה גדולה
+  for(let attempt=0;attempt<8;attempt++){
+    try{
+      const from=String(serialBase).padStart(8,'0');
+      const to=String(serialBase+WINDOW).padStart(8,'0');
+      const r=await db().from('cartons').select('carton_id')
+        .gte('carton_id',from).lte('carton_id',to).limit(1);
+      if(r.error) return;              // אין חיבור — לא חוסמים את העבודה
+      if(!r.data || !r.data.length) return;   // הטווח פנוי
+      serialBase=newSerialBase();      // תפוס — מגרילים שוב
+    }catch(e){ return; }
+  }
+}
 fill('stage',STAGES,function(s){return s;});
-window.addEventListener('load',function(){ loadDB(); loadSettings(); });
+window.addEventListener('load',function(){ loadDB(); loadSettings(); reserveSerials(); });
 </script>
 </body>
 </html>
