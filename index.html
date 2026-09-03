@@ -156,7 +156,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה D1</span></h1>
+        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה D2</span></h1>
         <p>בית האריזה · מדבקה 100×75 מ"מ (Zebra ZD220)</p>
       </div>
       <span id="meBox" class="no-print" style="font-size:.8rem;opacity:.9;margin-left:8px"></span>
@@ -436,7 +436,8 @@ async function afterLogin(){
     if(p.error) throw p.error;
     const prof=(p.data&&p.data[0])||null;
     if(!prof||!prof.active){ await db().auth.signOut(); throw new Error('למשתמש הזה אין הרשאה. פנה להנהלה.'); }
-    if(prof.role!=='admin' && prof.role!=='grower'){
+    // מנהל ופקיד דפו רואים את כל המגדלים. מגדל נעול על עצמו.
+    if(['admin','depot','grower'].indexOf(prof.role)<0){
       await db().auth.signOut(); throw new Error('אין לך הרשאה לעמדת המגדל.');
     }
     ME=prof;
@@ -444,7 +445,8 @@ async function afterLogin(){
     if(prof.role==='grower') MYG=prof.grower_num;
     document.getElementById('authGate').style.display='none';
     const mb=document.getElementById('meBox');
-    if(mb) mb.textContent=(prof.full_name||prof.email||'')+' · '+(prof.role==='admin'?'מנהל':'מגדל');
+    if(mb){ const rn={admin:'מנהל',depot:'דפו',grower:'מגדל'};
+      mb.textContent=(prof.full_name||prof.email||'')+' · '+(rn[prof.role]||prof.role); }
     startApp();
   }catch(e){
     if(msg) msg.innerHTML='<span style="color:#c62828">⚠️ '+(e.message||e)+'</span>';
