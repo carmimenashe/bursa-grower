@@ -130,13 +130,37 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
 </style>
 </head>
 <body>
+<!-- ===== מסך התחברות ===== -->
+<div id="authGate" style="position:fixed;inset:0;background:linear-gradient(135deg,#1a237e,#0d1451);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:30px 28px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)">
+    <h2 style="font-size:1.3rem;color:#1a237e;margin-bottom:6px">🌸 עמדת מגדל</h2>
+    <p style="font-size:.85rem;color:#6b7a90;margin-bottom:20px">התחבר עם הפרטים שקיבלת מההנהלה</p>
+    <div style="margin-bottom:12px">
+      <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;color:#46586e">אימייל</label>
+      <input type="email" id="authEmail" autocomplete="username"
+             style="width:100%;padding:11px;border:1.5px solid #d4dde8;border-radius:8px;font-size:1rem">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;color:#46586e">סיסמה</label>
+      <input type="password" id="authPass" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()"
+             style="width:100%;padding:11px;border:1.5px solid #d4dde8;border-radius:8px;font-size:1rem">
+    </div>
+    <button onclick="doLogin()" id="authBtn"
+            style="width:100%;padding:13px;background:linear-gradient(135deg,#283593,#1a237e);color:#fff;border:none;border-radius:9px;font-size:1rem;font-weight:700;cursor:pointer">התחבר</button>
+    <div id="authMsg" style="margin-top:12px;font-size:.88rem;text-align:center"></div>
+  </div>
+</div>
+
 <div class="wrap">
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה C9</span></h1>
+        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה D1</span></h1>
         <p>בית האריזה · מדבקה 100×75 מ"מ (Zebra ZD220)</p>
       </div>
+      <span id="meBox" class="no-print" style="font-size:.8rem;opacity:.9;margin-left:8px"></span>
+      <button onclick="doLogout()" class="no-print" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:8px 12px;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap">יציאה</button>
       <a id="homeBtn" href="https://transcendent-dragon-55ce11.netlify.app" class="no-print" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:700;white-space:nowrap">🏠 דף הבית</a>
     </div>
     <div class="no-print" style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -349,12 +373,15 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
 <script>
 const SB_URL='https://oilbwsvwzxhsobmtmhlw.supabase.co';
 const SB_KEY='sb_publishable_-_Akw2cZOsagxTrNVFpidA_xCIxYgCk';
+let MYG=null;   // מספר המגדל של המשתמש המחובר
+// urlG נשמר לתאימות, אבל הנעילה האמיתית מגיעה מההתחברות
 const urlG=new URLSearchParams(location.search).get('g');
+function lockedG(){ return MYG || urlG; }
 
 // מצב מגדל: נכנס דרך הקישור האישי.
 // רואה רק את עצמו, בלי מעבר לעמדות אחרות ובלי עריכת פרטים אישיים.
 function applyGrowerLock(){
-  if(!urlG) return;
+  if(!lockedG()) return;
   const hb=document.getElementById('homeBtn');
   if(hb) hb.style.display='none';
   // חוסם שדות פרטים אישיים אם קיימים במסך
@@ -382,6 +409,55 @@ function db(){
   return DB;
 }
 
+// ============ התחברות והרשאות ============
+let ME=null;
+async function doLogin(){
+  const msg=document.getElementById('authMsg'), btn=document.getElementById('authBtn');
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPass').value;
+  if(!email||!pass){ msg.innerHTML='<span style="color:#c62828">הזן אימייל וסיסמה</span>'; return; }
+  btn.disabled=true; btn.textContent='מתחבר…'; msg.innerHTML='';
+  try{
+    const r=await db().auth.signInWithPassword({email:email,password:pass});
+    if(r.error) throw r.error;
+    await afterLogin();
+  }catch(e){
+    msg.innerHTML='<span style="color:#c62828">⚠️ '+(e.message==='Invalid login credentials'?'אימייל או סיסמה שגויים':(e.message||e))+'</span>';
+    btn.disabled=false; btn.textContent='התחבר';
+  }
+}
+async function afterLogin(){
+  const msg=document.getElementById('authMsg'), btn=document.getElementById('authBtn');
+  try{
+    const s=await db().auth.getUser();
+    const u=s.data&&s.data.user;
+    if(!u) throw new Error('לא מחובר');
+    const p=await db().from('app_users').select('*').eq('id',u.id).limit(1);
+    if(p.error) throw p.error;
+    const prof=(p.data&&p.data[0])||null;
+    if(!prof||!prof.active){ await db().auth.signOut(); throw new Error('למשתמש הזה אין הרשאה. פנה להנהלה.'); }
+    if(prof.role!=='admin' && prof.role!=='grower'){
+      await db().auth.signOut(); throw new Error('אין לך הרשאה לעמדת המגדל.');
+    }
+    ME=prof;
+    // מגדל נעול על עצמו. מנהל רואה את כולם.
+    if(prof.role==='grower') MYG=prof.grower_num;
+    document.getElementById('authGate').style.display='none';
+    const mb=document.getElementById('meBox');
+    if(mb) mb.textContent=(prof.full_name||prof.email||'')+' · '+(prof.role==='admin'?'מנהל':'מגדל');
+    startApp();
+  }catch(e){
+    if(msg) msg.innerHTML='<span style="color:#c62828">⚠️ '+(e.message||e)+'</span>';
+    if(btn){ btn.disabled=false; btn.textContent='התחבר'; }
+  }
+}
+async function doLogout(){ await db().auth.signOut(); location.reload(); }
+(async function(){
+  try{ const s=await db().auth.getSession(); if(s.data&&s.data.session) await afterLogin(); }
+  catch(e){ console.error(e); }
+})();
+
+
 // ===== טעינה מהמאגר =====
 async function loadDB(){
   const st=document.getElementById('st');
@@ -402,15 +478,15 @@ async function loadDB(){
     const aG=r[0].data||[],aV=r[1].data||[],aE=r[2].data||[],aH=r[3].data||[],aC=r[4].data||[];
     const lV=r[5].data||[],lE=r[6].data||[],lH=r[7].data||[];
 
-    GROWERS = urlG ? aG.filter(function(g){return g.grower_num===urlG;}) : aG;
-    if(urlG && !GROWERS.length){ st.textContent='⚠️ מגדל '+urlG+' לא נמצא'; return; }
+    GROWERS = lockedG() ? aG.filter(function(g){return g.grower_num===lockedG();}) : aG;
+    if(lockedG() && !GROWERS.length){ st.textContent='⚠️ מגדל '+lockedG()+' לא נמצא'; return; }
 
     function filt(list,links,key,fld,gnum){
       if(!gnum) return list;
       const mine=new Set(links.filter(function(x){return x.grower_num===gnum;}).map(function(x){return x[key];}));
       return mine.size?list.filter(function(x){return mine.has(x[fld]);}):list;
     }
-    const gn = urlG || null;
+    const gn = lockedG() || null;
     VARIETIES=filt(aV,lV,'variety_code','code',gn);
     DESTS=filt(aE,lE,'exchange_code','code',gn);
     HANDLERS=filt(aH,lH,'handler_name','name',gn);
@@ -428,7 +504,7 @@ async function loadDB(){
     fill('mStage',STAGES,function(s){return s;});
     fill('mCtype',CTYPES,function(c){return c.name;});
 
-    if(urlG){
+    if(lockedG()){
       document.getElementById('grower').value='0';
       document.getElementById('grower').disabled=true;
       onGrower();
@@ -451,7 +527,7 @@ function onGrower(){
   if(g.sup) s+=' · ספק: <b>'+g.sup+'</b>';
   if(g.ggn) s+=' · GGN: <b>'+g.ggn+'</b>';
   box.innerHTML=s;
-  if(!urlG && window._all){
+  if(!lockedG() && window._all){
     const a=window._all, gn=g.grower_num;
     function filt(list,links,key,fld){
       const mine=new Set(links.filter(function(x){return x.grower_num===gn;}).map(function(x){return x[key];}));
@@ -1042,7 +1118,7 @@ async function loadHistory(){
     await loadSettings();
     const since=new Date(Date.now()-HIST.days*864e5).toISOString();
     let q=db().from('deliveries').select('*').gte('created_at',since).order('created_at',{ascending:false}).limit(1000);
-    if(urlG) q=q.eq('grower_num',urlG);
+    if(lockedG()) q=q.eq('grower_num',lockedG());
     const r=await q;
     if(r.error) throw r.error;
     HIST.rows=r.data||[];
@@ -1225,7 +1301,7 @@ async function reserveSerials(){
   }
 }
 fill('stage',STAGES,function(s){return s;});
-window.addEventListener('load',function(){ applyGrowerLock(); loadDB(); loadSettings(); reserveSerials(); });
+function startApp(){ applyGrowerLock(); loadDB(); loadSettings(); reserveSerials(); }
 </script>
 </body>
 </html>
