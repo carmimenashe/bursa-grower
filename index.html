@@ -134,7 +134,7 @@ td{padding:6px 5px;border-bottom:1px solid #eef2f7}
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה C6</span></h1>
+        <h1>🌸 עמדת מגדל — מחולל מדבקות <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה C8</span></h1>
         <p>בית האריזה · מדבקה 100×75 מ"מ (Zebra ZD220)</p>
       </div>
       <a href="https://transcendent-dragon-55ce11.netlify.app" class="no-print" style="background:rgba(255,255,255,.2);color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:700;white-space:nowrap">🏠 דף הבית</a>
@@ -353,7 +353,7 @@ const urlG=new URLSearchParams(location.search).get('g');
 
 let GROWERS=[],VARIETIES=[],DESTS=[],HANDLERS=[],CTYPES=[];
 const STAGES=["23","24","25","28","סגור","פתוח"];
-let cartons=[],mixBuf=[],editIdx=null,serialBase=0;
+let cartons=[],mixBuf=[],editIdx=null,serialBase=0,dnoPrinted=null;
 let DB=null;
 
 function v(id){return document.getElementById(id).value;}
@@ -687,6 +687,7 @@ async function saveDelivery(){
 
     sst.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשמר במאגר — תעודה '+dno+' · '+cartons.length+' קרטונים</span>';
     const bs=document.getElementById('btnSave'); if(bs) bs.style.display='none';
+    dnoPrinted=dno;
     return true;
   }catch(e){
     sst.innerHTML='<div style="background:#ffebee;border:1px solid #ef9a9a;border-radius:8px;padding:10px 14px;text-align:right;color:#c62828;font-size:.85rem;margin-top:6px">⚠️ <b>השמירה למאגר נכשלה:</b> '+(e.message||e)+'</div>';
@@ -802,8 +803,8 @@ async function printZebra(){
       const ps=(res&&res.printer)?res.printer:[];
       if(!ps.length) throw new Error('no printer');
       fetch(bases[i]+'/write',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device:ps[0],data:z})})
-        .then(function(){st.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשלח למדפסת — '+cartons.length+' מדבקות</span>';})
-        .catch(function(){st.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשלח למדפסת</span>';});
+        .then(function(){st.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשלח למדפסת — '+cartons.length+' מדבקות</span>'+noteBtn(dnoPrinted);})
+        .catch(function(){st.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ נשלח למדפסת</span>'+noteBtn(dnoPrinted);});
     }).catch(function(){tryB(i+1);});
   })(0);
 }
@@ -1058,7 +1059,7 @@ function renderHist(){
       +'<span class="hn">'+(d.carton_count!=null?d.carton_count:'–')+'</span>'
       +'<div class="hg">'+nm+'</div>'
       +'<div class="hm">תעודה '+(d.delivery_no||'—')+' · '+hDate(d.created_at)
-      +(d.note_no?' · נהג #'+String(d.note_no).padStart(5,'0'):'')+'</div></div>';
+      +'</div></div>';
   }).join('');
 }
 
@@ -1105,23 +1106,26 @@ async function selHist(id){
 }
 
 // ============ תעודה לנהג ============
-async function ensureNoteNo(d){
-  if(d.note_no) return d.note_no;
-  const r=await db().from('deliveries').select('note_no').not('note_no','is',null).order('note_no',{ascending:false}).limit(1);
-  if(r.error) throw r.error;
-  const next=((r.data&&r.data.length)?Number(r.data[0].note_no):0)+1;
-  const u=await db().from('deliveries').update({note_no:next}).eq('id',d.id);
-  if(u.error) throw u.error;
-  d.note_no=next;
-  return next;
+
+// תעודה לנהג ישירות ממספר תעודה — בלי לעבור דרך ההיסטוריה
+function noteBtn(dno){
+  if(!dno) return '';
+  return '<div style="margin-top:10px"><button onclick="printNoteByDelivery(\''+dno+'\')" '
+    +'style="background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border:none;border-radius:9px;'
+    +'padding:12px 20px;font-weight:700;font-size:1rem;cursor:pointer">🚚 תעודת משלוח לנהג</button></div>';
+}
+async function printNoteByDelivery(dno){
+  try{
+    const r=await db().from('deliveries').select('*').eq('delivery_no',String(dno)).limit(1);
+    if(r.error) throw r.error;
+    if(!r.data || !r.data.length){ alert('התעודה לא נמצאה במאגר'); return; }
+    await printNote(null, r.data[0]);
+  }catch(e){ alert('שגיאה: '+(e.message||e)); }
 }
 
-async function printNote(id){
-  const d=HIST.rows.find(function(x){return x.id===id;});
+async function printNote(id, rec){
+  const d=rec||HIST.rows.find(function(x){return x.id===id;});
   if(!d) return;
-  let noteNo=d.note_no||null;
-  try{ noteNo=await ensureNoteNo(d); }catch(e){ console.error(e); }
-
   let cts=[];
   try{
     const r=await db().from('cartons').select('*').eq('delivery_no',String(d.delivery_no||''));
@@ -1139,10 +1143,9 @@ async function printNote(id){
      '<div class="n-top"><h1>תעודת משלוח</h1>'
     +'<div class="n-co"><b>'+SETTINGS.company_name+'</b><br>הובלה: '+(d.transport||SETTINGS.transport_name)+'</div></div>'
     +'<div class="n-grid">'
-    +'<div class="n-cell"><span>מספר רץ</span><b>'+(noteNo?String(noteNo).padStart(5,'0'):'—')+'</b></div>'
-    +'<div class="n-cell"><span>תאריך</span><b>'+hDate(d.created_at)+'</b></div>'
     +'<div class="n-cell"><span>מספר תעודה</span><b>'+(d.delivery_no||'—')+'</b></div>'
-    +'<div class="n-cell"><span>מספר מגדל</span><b>'+(d.grower_num||'—')+'</b></div>'
+    +'<div class="n-cell"><span>תאריך</span><b>'+hDate(d.created_at)+'</b></div>'
+    +'<div class="n-cell full"><span>מספר מגדל</span><b>'+(d.grower_num||'—')+'</b></div>'
     +'<div class="n-cell full"><span>נשלח מ־</span><b>'+hName(d)+'</b></div>'
     +'<div class="n-cell full"><span>יעד</span><b>'+SETTINGS.depot_name+'</b>'
     +'<div style="font-size:14px;margin-top:2px">'+SETTINGS.depot_address+'</div></div>'
