@@ -61,7 +61,7 @@
   .active-pallet{background:#e0f2f1;border:2.5px solid #00695c;border-radius:12px;padding:14px 18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
   .active-pallet .ap-info{font-size:1.05rem;font-weight:700;color:#004d40}
   .active-pallet .ap-count{background:#00695c;color:#fff;padding:4px 14px;border-radius:20px;font-size:.9rem}
-  .pallet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px}
+  .pallet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
   .pallet{border:2px solid #b0bec5;border-radius:11px;overflow:hidden}
   .pallet.active{border-color:#00695c;box-shadow:0 2px 10px rgba(0,77,64,.18)}
   .pallet-head{background:#eceff1;padding:8px 12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;font-size:.9rem}
@@ -107,7 +107,7 @@
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🏭 עמדת דפו — קבלה · משטוח · ייצוא <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה S11</span></h1>
+        <h1>🏭 עמדת דפו — קבלה · משטוח · ייצוא <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה S12</span></h1>
         <p>נקודת האיסוף המרכזית · נתונים משותפים בין מחשב לסלולר</p>
       </div>
       <span id="meBox" style="font-size:.8rem;opacity:.9;margin-left:8px"></span>
@@ -687,10 +687,10 @@ function renderPallets(){
         +'<div class="pallet-head">משטח '+p.num+' <span class="seg">'+p.cartons.length+'</span></div>'
         +'<div class="pallet-body">'+items+'</div>'
         +'<div style="padding:8px 12px;background:#fff8e1;border-top:1px solid #ffe082" onclick="event.stopPropagation()">'
-          +'<label style="font-size:.72rem;font-weight:700;color:#8d6e63;display:block;margin-bottom:3px">⚖️ משקל המשטח (ק"ג)</label>'
+          +'<label style="font-size:.85rem;font-weight:700;color:#8d6e63;display:block;margin-bottom:6px">⚖️ משקל המשטח (ק"ג)</label>'
           +'<input type="number" inputmode="decimal" value="'+(p.weight||'')+'" placeholder="—" '
           +'onchange="savePalletWeight(\''+p.num+'\',this.value)" '
-          +'style="width:100%;padding:7px 9px;border:1.5px solid #ffb300;border-radius:7px;font-size:.95rem;font-weight:700;text-align:center">'
+          +'style="width:100%;padding:14px 10px;border:2px solid #ffb300;border-radius:9px;font-size:1.5rem;font-weight:700;text-align:center;letter-spacing:2px;background:#fff">'
         +'</div></div>';
     }).join('');
   }
