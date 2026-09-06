@@ -7,6 +7,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+  /* ביטול החיצים בשדות מספר — מונע שינוי בטעות בלחיצה או בגלילה */
+  input[type=number]{-moz-appearance:textfield;appearance:textfield}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:#eef2f7;color:#1a2533;padding:14px;line-height:1.5}
   .wrap{max-width:1150px;margin:0 auto}
@@ -82,7 +87,7 @@
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>⚙️ ניהול מערכת הבורסה <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה A6</span></h1>
+        <h1>⚙️ ניהול מערכת הבורסה <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה A7</span></h1>
         <p>מגדלים · זנים · בורסות · פורקים · הצמדות · הזמנות הובלה</p>
       </div>
       <span id="meBox" style="font-size:.8rem;opacity:.9;margin-left:8px"></span>
@@ -823,6 +828,13 @@ function goTab(n){
   if(n===6){ fillGrowerSelect(); loadUsers(); }
 }
 
+
+// חוסם שינוי ערך בגלילת הגלגלת מעל שדה מספר
+document.addEventListener('wheel', function(e){
+  if(document.activeElement && document.activeElement.type==='number'){
+    document.activeElement.blur();
+  }
+}, {passive:true});
 </script>
 </body>
 </html>
