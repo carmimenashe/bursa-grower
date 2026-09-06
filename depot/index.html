@@ -107,7 +107,7 @@
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🏭 עמדת דפו — קבלה · משטוח · ייצוא <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה S12</span></h1>
+        <h1>🏭 עמדת דפו — קבלה · משטוח · ייצוא <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה S13</span></h1>
         <p>נקודת האיסוף המרכזית · נתונים משותפים בין מחשב לסלולר</p>
       </div>
       <span id="meBox" style="font-size:.8rem;opacity:.9;margin-left:8px"></span>
@@ -678,6 +678,10 @@ async function savePalletWeight(num,val){
 }
 
 function renderPallets(){
+  // אם המשתמש מקליד משקל — לא בונים מחדש, כדי לא למחוק לו את מה שהקליד
+  const af=document.activeElement;
+  if(af && af.classList && af.classList.contains('pw-input')) return;
+
   const grid=document.getElementById('palletGrid');
   if(!pallets.length){ grid.innerHTML='<p class="hint">אין משטחים עדיין</p>'; }
   else {
@@ -688,7 +692,7 @@ function renderPallets(){
         +'<div class="pallet-body">'+items+'</div>'
         +'<div style="padding:8px 12px;background:#fff8e1;border-top:1px solid #ffe082" onclick="event.stopPropagation()">'
           +'<label style="font-size:.85rem;font-weight:700;color:#8d6e63;display:block;margin-bottom:6px">⚖️ משקל המשטח (ק"ג)</label>'
-          +'<input type="number" inputmode="decimal" value="'+(p.weight||'')+'" placeholder="—" '
+          +'<input type="number" class="pw-input" inputmode="decimal" value="'+(p.weight||'')+'" placeholder="—" '
           +'onchange="savePalletWeight(\''+p.num+'\',this.value)" '
           +'style="width:100%;padding:14px 10px;border:2px solid #ffb300;border-radius:9px;font-size:1.5rem;font-weight:700;text-align:center;letter-spacing:2px;background:#fff">'
         +'</div></div>';
