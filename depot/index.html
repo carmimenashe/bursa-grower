@@ -107,7 +107,7 @@
   <header>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
-        <h1>🏭 עמדת דפו — קבלה · משטוח · ייצוא <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה S13</span></h1>
+        <h1>🏭 עמדת דפו — קבלה · משטוח · ייצוא <span style="font-size:.7rem;background:#c62828;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle">גרסה S14</span></h1>
         <p>נקודת האיסוף המרכזית · נתונים משותפים בין מחשב לסלולר</p>
       </div>
       <span id="meBox" style="font-size:.8rem;opacity:.9;margin-left:8px"></span>
@@ -142,6 +142,19 @@
       <div id="recStatus" style="margin-top:8px;font-size:.88rem"></div>
       <p class="hint">בצע קבלה לכל מגדל. אחרי שכל הקבלות הושלמו — עבור לשלב המשטוח.</p>
     </div>
+    <div class="card" style="border-right:5px solid #f57c00">
+      <h2>🔢 רשימת מספרי קרטונים — להקלדה ידנית</h2>
+      <p class="hint" style="margin-bottom:10px">כשהברקוד לא נקרא: בחר מגדל ותעודה, וקבל רשימה מודפסת של מספרי הקרטונים</p>
+      <div class="row2">
+        <div class="field"><label>מגדל</label>
+          <select id="clGrower" onchange="loadDeliveriesFor()"><option value="">— בחר מגדל —</option></select></div>
+        <div class="field"><label>תעודה</label>
+          <select id="clDelivery"><option value="">— בחר מגדל קודם —</option></select></div>
+      </div>
+      <button class="btn" onclick="showCartonList()" style="background:linear-gradient(135deg,#f57c00,#e65100)">📄 הצג רשימה</button>
+      <div id="clMsg" style="margin-top:8px;font-size:.88rem"></div>
+    </div>
+
     <div class="card">
       <h2>קבלות שנקלטו</h2>
       <table><thead><tr><th>מגדל</th><th>קרטונים</th><th>משטחים</th><th>משקל כולל</th><th>ממוצע/קרטון</th><th></th></tr></thead>
@@ -421,9 +434,100 @@ async function loadGrowers(){
     if(!dbGrowers.length){ sel.innerHTML='<option value="">אין מגדלים במאגר</option>'; return; }
     sel.innerHTML='<option value="">— בחר מגדל —</option>'+dbGrowers.map(function(g){
       return '<option value="'+g.grower_num+'">'+g.name+' ('+g.grower_num+')</option>'; }).join('');
+    fillClGrowers();
   }catch(e){
     console.error(e);
     sel.innerHTML='<option value="">⚠️ '+e.message+'</option>';
+  }
+}
+
+
+// ===== רשימת מספרי קרטונים להקלדה ידנית =====
+function fillClGrowers(){
+  const sel=document.getElementById('clGrower');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— בחר מגדל —</option>'+dbGrowers.map(function(g){
+    return '<option value="'+g.grower_num+'">'+g.name+' ('+g.grower_num+')</option>'; }).join('');
+}
+async function loadDeliveriesFor(){
+  const gnum=v('clGrower');
+  const sel=document.getElementById('clDelivery');
+  const msg=document.getElementById('clMsg');
+  msg.innerHTML='';
+  if(!gnum){ sel.innerHTML='<option value="">— בחר מגדל קודם —</option>'; return; }
+  sel.innerHTML='<option value="">⏳ טוען…</option>';
+  try{
+    const r=await db().from('deliveries').select('delivery_no,created_at')
+      .eq('grower_num',gnum).order('created_at',{ascending:false}).limit(60);
+    if(r.error) throw r.error;
+    const rows=r.data||[];
+    if(!rows.length){ sel.innerHTML='<option value="">אין תעודות למגדל הזה</option>'; return; }
+    sel.innerHTML='<option value="">— בחר תעודה —</option>'+rows.map(function(d){
+      const dt=d.created_at?new Date(d.created_at).toLocaleDateString('en-GB'):'';
+      return '<option value="'+d.delivery_no+'">'+d.delivery_no+(dt?'  ·  '+dt:'')+'</option>';
+    }).join('');
+  }catch(e){
+    sel.innerHTML='<option value="">⚠️ שגיאה</option>';
+    msg.innerHTML='<span style="color:#c62828">'+(e.message||e)+'</span>';
+  }
+}
+async function showCartonList(){
+  const dno=v('clDelivery');
+  const gnum=v('clGrower');
+  const msg=document.getElementById('clMsg');
+  if(!dno){ msg.innerHTML='<span style="color:#c62828">בחר תעודה</span>'; return; }
+  msg.innerHTML='<span style="color:#e65100">⏳ טוען…</span>';
+  try{
+    const c=await db().from('cartons').select('*').eq('delivery_no',String(dno));
+    if(c.error) throw c.error;
+    const rows=c.data||[];
+    if(!rows.length){ msg.innerHTML='<span style="color:#c62828">אין קרטונים לתעודה הזו</span>'; return; }
+
+    // קרטון מעורב = מזהה אחד עם כמה שורות זן
+    const byId={};
+    rows.forEach(function(r){
+      if(!byId[r.carton_id]) byId[r.carton_id]={id:r.carton_id, ctype:r.carton_type||'', items:[]};
+      byId[r.carton_id].items.push(r);
+    });
+    const list=Object.values(byId).sort(function(a,b){ return String(a.id).localeCompare(String(b.id)); });
+    const g=dbGrowers.find(function(x){ return x.grower_num===gnum; });
+    const gname=g?g.name:gnum;
+
+    const w=window.open('','_blank');
+    w.document.write('<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">'
+      +'<title>מספרי קרטונים — תעודה '+dno+'</title><style>'
+      +'body{font-family:Arial,sans-serif;padding:24px;color:#1a2533}'
+      +'h1{font-size:1.4rem;margin-bottom:4px}'
+      +'.sub{color:#555;font-size:.95rem;margin-bottom:18px}'
+      +'table{width:100%;border-collapse:collapse;font-size:1rem}'
+      +'th{background:#eef2f7;padding:9px 8px;text-align:right;border-bottom:2px solid #ccd}'
+      +'td{padding:10px 8px;border-bottom:1px solid #e8edf3}'
+      +'.num{font-size:1.5rem;font-weight:700;letter-spacing:3px;font-family:monospace}'
+      +'.chk{width:34px;height:22px;border:2px solid #999;border-radius:4px;display:inline-block}'
+      +'.tot{margin-top:16px;background:#eef2f7;padding:10px 14px;border-radius:8px;font-weight:700}'
+      +'@media print{button{display:none}}'
+      +'</style></head><body>'
+      +'<h1>מספרי קרטונים להקלדה</h1>'
+      +'<div class="sub">תעודה <b>'+dno+'</b> · '+gname+' ('+gnum+') · '
+      +new Date().toLocaleDateString("en-GB")+'</div>'
+      +'<table><thead><tr><th>✓</th><th>#</th><th>מספר קרטון</th><th>תכולה</th><th>קרטון</th></tr></thead><tbody>'
+      +list.map(function(x,i){
+         const desc=x.items.map(function(it){
+           return (it.variety_desc||it.variety_code||'')+' · '+(it.length||'')+'ס"מ · '+(it.qty||'')+' יח\'';
+         }).join('<br>');
+         return '<tr><td><span class="chk"></span></td><td>'+(i+1)+'</td>'
+           +'<td class="num">'+x.id+'</td><td>'+desc
+           +(x.items.length>1?' <b style="color:#e65100">(מעורב)</b>':'')+'</td><td>'+x.ctype+'</td></tr>';
+       }).join('')
+      +'</tbody></table>'
+      +'<div class="tot">סה"כ '+list.length+' קרטונים</div>'
+      +'<button onclick="window.print()" style="margin-top:18px;padding:12px 22px;background:#1565c0;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer">🖨️ הדפס</button>'
+      +'</body></html>');
+    w.document.close();
+    msg.innerHTML='<span style="color:#2e7d32;font-weight:700">✅ '+list.length+' קרטונים</span>';
+  }catch(e){
+    msg.innerHTML='<span style="color:#c62828">⚠️ '+(e.message||e)+'</span>';
+    console.error(e);
   }
 }
 
